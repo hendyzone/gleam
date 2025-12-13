@@ -24,7 +24,7 @@
 
 .gleam-model-button {
   flex: 1;
-  min-width: 0;
+  min-width: 300px; // 设置最小宽度，确保模型名称可见
   padding: 6px 8px;
   border: 1px solid var(--b3-border-color);
   border-radius: 4px;
@@ -86,10 +86,12 @@
     border-radius: 8px;
     width: 90%;
     max-width: 500px;
+    min-width: 400px; // 设置最小宽度，防止过度缩小
     max-height: 80vh;
     display: flex;
     flex-direction: column;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    overflow: hidden;
   }
   
   &-header {
@@ -161,6 +163,7 @@
     color: var(--b3-theme-on-background);
     transition: background 0.2s;
     word-break: break-word;
+    min-width: 0; // 允许内容收缩
     
     &:hover {
       background: var(--b3-theme-surface);
@@ -176,6 +179,10 @@
       font-weight: 500;
       margin-bottom: 4px;
       color: var(--b3-theme-on-background);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      min-width: 0;
       
       .gleam-model-dialog-item.selected & {
         color: var(--b3-theme-on-background);
@@ -189,6 +196,10 @@
       margin-bottom: 8px;
       font-family: monospace;
       color: var(--b3-theme-on-background);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      min-width: 0;
       
       .gleam-model-dialog-item.selected & {
         opacity: 0.8;
@@ -201,6 +212,7 @@
       flex-wrap: wrap;
       gap: 6px;
       margin-top: 8px;
+      min-width: 0;
     }
   }
 }
