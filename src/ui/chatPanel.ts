@@ -275,10 +275,29 @@ export class ChatPanel {
     const time = new Date().toLocaleTimeString();
     // 如果是助手消息，使用 Markdown 渲染；用户消息使用纯文本
     const contentHtml = role === 'assistant' ? this.renderMarkdown(content) : this.escapeHtml(content);
+    // 为助手消息添加复制按钮
+    const copyButton = role === 'assistant' 
+      ? '<button class="gleam-copy-button" title="复制" data-content="' + this.escapeHtml(content) + '">📋</button>'
+      : '';
     messageElement.innerHTML = `
-      <div class="gleam-message-content">${contentHtml}</div>
+      <div class="gleam-message-content">
+        ${contentHtml}
+        ${copyButton}
+      </div>
       <div class="gleam-message-time">${time}</div>
     `;
+    
+    // 为复制按钮添加事件监听
+    if (role === 'assistant') {
+      const copyBtn = messageElement.querySelector('.gleam-copy-button') as HTMLButtonElement;
+      if (copyBtn) {
+        copyBtn.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          const textToCopy = copyBtn.getAttribute('data-content') || '';
+          await this.copyToClipboard(textToCopy);
+        });
+      }
+    }
 
     this.messagesContainer.appendChild(messageElement);
     this.scrollToBottom();
@@ -444,6 +463,32 @@ export class ChatPanel {
 
   private scrollToBottom() {
     this.messagesContainer.scrollTop = this.messagesContainer.scrollHeight;
+  }
+
+  /**
+   * 复制文本到剪贴板
+   */
+  private async copyToClipboard(text: string): Promise<void> {
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(text);
+        Logger.log('[ChatPanel] 文本已复制到剪贴板');
+      } else {
+        // 降级方案：使用传统方法
+        const textArea = document.createElement('textarea');
+        textArea.value = text;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-999999px';
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        Logger.log('[ChatPanel] 文本已复制到剪贴板（降级方案）');
+      }
+    } catch (error) {
+      Logger.error('[ChatPanel] 复制失败:', error);
+      this.showError('复制失败，请手动复制');
+    }
   }
 
   private showError(message: string) {
