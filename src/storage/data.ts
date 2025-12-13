@@ -6,10 +6,6 @@ const DEFAULT_CONFIG: PluginData['config'] = {
     apiKey: '',
     baseURL: 'https://openrouter.ai/api/v1'
   },
-  siliconflow: {
-    apiKey: '',
-    baseURL: 'https://api.siliconflow.cn/v1'
-  },
   currentProvider: 'openrouter',
   currentModel: '',
   enableContext: false,

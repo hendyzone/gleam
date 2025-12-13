@@ -2,7 +2,6 @@ import { ChatMessage } from '../utils/types';
 import { DataStorage } from '../storage/data';
 import { ContextInjector } from '../features/context-injection';
 import { OpenRouterProvider } from '../api/openrouter';
-import { SiliconFlowProvider } from '../api/siliconflow';
 import { AIProvider } from '../api/base';
 import { Lute } from 'siyuan';
 import { Logger } from '../utils/logger';
@@ -13,8 +12,10 @@ export class ChatPanel {
   private inputArea!: HTMLElement;
   private textarea!: HTMLTextAreaElement;
   private sendButton!: HTMLButtonElement;
-  private providerSelect!: HTMLSelectElement;
   private modelSelect!: HTMLSelectElement;
+  private modelButton!: HTMLButtonElement; // 模型选择按钮
+  private allModels: string[] = []; // 存储所有模型列表
+  private modelDialog!: HTMLElement; // 模型选择对话框
   private contextToggle!: HTMLInputElement;
   private historyButton!: HTMLButtonElement;
   private newChatButton!: HTMLButtonElement;
@@ -34,8 +35,7 @@ export class ChatPanel {
     this.storage = new DataStorage(plugin);
     this.contextInjector = new ContextInjector(plugin);
     this.providers = new Map<string, AIProvider>([
-      ['openrouter', new OpenRouterProvider()],
-      ['siliconflow', new SiliconFlowProvider()]
+      ['openrouter', new OpenRouterProvider()]
     ]);
 
     this.init();
@@ -59,11 +59,11 @@ export class ChatPanel {
             <button class="gleam-send-button" id="gleam-send-button">${this.plugin.i18n.send}</button>
           </div>
           <div class="gleam-controls">
-            <select class="gleam-select" id="gleam-provider-select">
-              <option value="openrouter">${this.plugin.i18n.provider}: OpenRouter</option>
-              <option value="siliconflow">${this.plugin.i18n.provider}: SiliconFlow</option>
-            </select>
-            <select class="gleam-select" id="gleam-model-select">
+            <button class="gleam-model-button" id="gleam-model-button">
+              <span id="gleam-model-button-text">${this.plugin.i18n.selectModel}</span>
+              <span class="gleam-model-button-arrow">▼</span>
+            </button>
+            <select class="gleam-select gleam-model-select-hidden" id="gleam-model-select">
               <option value="">${this.plugin.i18n.selectModel}</option>
             </select>
             <label class="gleam-toggle">
@@ -81,32 +81,37 @@ export class ChatPanel {
     this.inputArea = this.element.querySelector('.gleam-input-area')!;
     this.textarea = this.element.querySelector('#gleam-textarea') as HTMLTextAreaElement;
     this.sendButton = this.element.querySelector('#gleam-send-button') as HTMLButtonElement;
-    this.providerSelect = this.element.querySelector('#gleam-provider-select') as HTMLSelectElement;
     this.modelSelect = this.element.querySelector('#gleam-model-select') as HTMLSelectElement;
+    this.modelButton = this.element.querySelector('#gleam-model-button') as HTMLButtonElement;
     this.contextToggle = this.element.querySelector('#gleam-context-toggle') as HTMLInputElement;
     this.historyButton = this.element.querySelector('#gleam-history-button') as HTMLButtonElement;
     this.newChatButton = this.element.querySelector('#gleam-new-chat-button') as HTMLButtonElement;
     this.historyPanel = this.element.querySelector('#gleam-history-panel')!;
+    
+    // 创建模型选择对话框
+    this.createModelDialog();
     
     this.updateEmptyState();
   }
 
   private async loadConfig() {
     const config = await this.storage.getConfig();
-    this.providerSelect.value = config.currentProvider;
     this.contextToggle.checked = config.enableContext;
-    await this.loadModels(config.currentProvider);
+    await this.loadModels('openrouter');
     if (config.currentModel) {
       this.modelSelect.value = config.currentModel;
+      this.updateModelButtonText(config.currentModel);
     }
   }
 
   private async loadModels(provider: string) {
     const config = await this.storage.getConfig();
-    const providerConfig = provider === 'openrouter' ? config.openrouter : config.siliconflow;
+    const providerConfig = config.openrouter;
     
     if (!providerConfig.apiKey) {
       this.modelSelect.innerHTML = `<option value="">${this.plugin.i18n.apiKeyRequired}</option>`;
+      this.allModels = [];
+      this.updateModelButtonText('');
       return;
     }
 
@@ -115,11 +120,121 @@ export class ChatPanel {
 
     try {
       const models = await aiProvider.getModels(providerConfig.apiKey);
+      this.allModels = models;
       this.modelSelect.innerHTML = models.map(model => 
         `<option value="${model}">${model}</option>`
       ).join('');
     } catch (error) {
       Logger.error('Failed to load models:', error);
+      this.allModels = [];
+      this.updateModelButtonText('');
+    }
+  }
+
+  /**
+   * 创建模型选择对话框
+   */
+  private createModelDialog() {
+    this.modelDialog = document.createElement('div');
+    this.modelDialog.className = 'gleam-model-dialog';
+    this.modelDialog.innerHTML = `
+      <div class="gleam-model-dialog-content">
+        <div class="gleam-model-dialog-header">
+          <div class="gleam-model-dialog-title">${this.plugin.i18n.selectModel || '选择模型'}</div>
+          <button class="gleam-model-dialog-close">&times;</button>
+        </div>
+        <div class="gleam-model-dialog-search">
+          <input type="text" class="gleam-model-dialog-search-input" placeholder="${this.plugin.i18n.searchModel || '搜索模型...'}" autocomplete="off">
+        </div>
+        <div class="gleam-model-dialog-list"></div>
+      </div>
+    `;
+    document.body.appendChild(this.modelDialog);
+    
+    // 关闭按钮事件
+    const closeBtn = this.modelDialog.querySelector('.gleam-model-dialog-close') as HTMLButtonElement;
+    closeBtn.addEventListener('click', () => this.hideModelDialog());
+    
+    // 点击外部关闭
+    this.modelDialog.addEventListener('click', (e) => {
+      if (e.target === this.modelDialog) {
+        this.hideModelDialog();
+      }
+    });
+    
+    // 搜索功能
+    const searchInput = this.modelDialog.querySelector('.gleam-model-dialog-search-input') as HTMLInputElement;
+    const listContainer = this.modelDialog.querySelector('.gleam-model-dialog-list') as HTMLElement;
+    
+    searchInput.addEventListener('input', (e) => {
+      const keyword = (e.target as HTMLInputElement).value.toLowerCase();
+      this.renderModelDialogList(keyword, listContainer);
+    });
+  }
+
+  /**
+   * 显示模型选择对话框
+   */
+  private showModelDialog() {
+    if (this.allModels.length === 0) {
+      this.showError(this.plugin.i18n.apiKeyRequired || '请先配置API密钥');
+      return;
+    }
+    
+    const listContainer = this.modelDialog.querySelector('.gleam-model-dialog-list') as HTMLElement;
+    const searchInput = this.modelDialog.querySelector('.gleam-model-dialog-search-input') as HTMLInputElement;
+    searchInput.value = '';
+    this.renderModelDialogList('', listContainer);
+    this.modelDialog.classList.add('show');
+    searchInput.focus();
+  }
+
+  /**
+   * 隐藏模型选择对话框
+   */
+  private hideModelDialog() {
+    this.modelDialog.classList.remove('show');
+  }
+
+  /**
+   * 渲染模型对话框列表
+   */
+  private renderModelDialogList(keyword: string, container: HTMLElement) {
+    let models = this.allModels;
+    
+    if (keyword) {
+      models = this.allModels.filter(model => 
+        model.toLowerCase().includes(keyword)
+      );
+    }
+    
+    const currentValue = this.modelSelect.value;
+    container.innerHTML = models.map(model => {
+      const isSelected = model === currentValue;
+      return `<div class="gleam-model-dialog-item ${isSelected ? 'selected' : ''}" data-value="${this.escapeHtml(model)}">${this.escapeHtml(model)}</div>`;
+    }).join('');
+    
+    // 添加点击事件
+    container.querySelectorAll('.gleam-model-dialog-item').forEach(item => {
+      item.addEventListener('click', () => {
+        const value = item.getAttribute('data-value') || '';
+        this.modelSelect.value = value;
+        this.updateModelButtonText(value);
+        this.hideModelDialog();
+        this.saveConfig();
+      });
+    });
+  }
+
+  /**
+   * 更新模型按钮文本
+   */
+  private updateModelButtonText(value: string) {
+    const buttonText = this.modelButton.querySelector('#gleam-model-button-text') as HTMLElement;
+    if (value) {
+      buttonText.textContent = value;
+    } else {
+      buttonText.textContent = this.plugin.i18n.selectModel || '选择模型';
     }
   }
 
@@ -156,12 +271,17 @@ export class ChatPanel {
       }
     });
 
-    this.providerSelect.addEventListener('change', async () => {
-      await this.loadModels(this.providerSelect.value);
-      await this.saveConfig();
+    // 模型选择按钮点击事件
+    this.modelButton.addEventListener('click', () => {
+      this.showModelDialog();
+    });
+    
+    // 当 select 改变时，更新按钮文本
+    this.modelSelect.addEventListener('change', () => {
+      this.updateModelButtonText(this.modelSelect.value);
+      this.saveConfig();
     });
 
-    this.modelSelect.addEventListener('change', () => this.saveConfig());
     this.contextToggle.addEventListener('change', () => this.saveConfig());
     this.historyButton.addEventListener('click', () => this.toggleHistory());
     this.newChatButton.addEventListener('click', () => this.newChat());
@@ -172,9 +292,7 @@ export class ChatPanel {
     if (!message || this.isLoading) return;
 
     const config = await this.storage.getConfig();
-    const providerConfig = config.currentProvider === 'openrouter' 
-      ? config.openrouter 
-      : config.siliconflow;
+    const providerConfig = config.openrouter;
 
     if (!providerConfig.apiKey) {
       this.showError(this.plugin.i18n.apiKeyRequired);
@@ -502,7 +620,7 @@ export class ChatPanel {
 
   private async saveConfig() {
     const config = await this.storage.getConfig();
-    config.currentProvider = this.providerSelect.value as any;
+    config.currentProvider = 'openrouter';
     config.currentModel = this.modelSelect.value;
     config.enableContext = this.contextToggle.checked;
     await this.storage.saveConfig(config);
@@ -609,14 +727,12 @@ export class ChatPanel {
     this.currentMessages = [];
     this.hasContextInjected = false; // 重置上下文注入标记
     
-    // 切换到默认供应商和模型
+    // 切换到默认模型
     const config = await this.storage.getConfig();
-    if (config.currentProvider) {
-      this.providerSelect.value = config.currentProvider;
-      await this.loadModels(config.currentProvider);
-    }
+    await this.loadModels('openrouter');
     if (config.currentModel) {
       this.modelSelect.value = config.currentModel;
+      this.updateModelButtonText(config.currentModel);
     }
     
     // 保存配置（确保UI状态与配置同步）

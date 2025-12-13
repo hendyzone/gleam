@@ -1,4 +1,4 @@
-export type Provider = 'openrouter' | 'siliconflow';
+export type Provider = 'openrouter';
 
 export interface ProviderConfig {
   apiKey: string;
@@ -7,7 +7,6 @@ export interface ProviderConfig {
 
 export interface PluginConfig {
   openrouter: ProviderConfig;
-  siliconflow: ProviderConfig;
   currentProvider: Provider;
   currentModel: string;
   enableContext: boolean;
