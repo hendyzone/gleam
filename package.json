@@ -1,32 +1,40 @@
 {
-  "name": "plugin-sample",
-  "version": "0.4.3",
-  "description": "This is a sample plugin for Siyuan (https://b3log.org/siyuan)",
+  "name": "gleam",
+  "version": "0.1.0",
+  "description": "AI chat assistant plugin for SiYuan",
   "main": ".src/index.js",
   "scripts": {
     "lint": "eslint . --fix --cache",
-    "dev": "webpack --mode development",
+    "dev": "webpack --mode development  --watch",
     "build": "webpack --mode production"
   },
-  "keywords": [],
-  "author": "Vanessa",
+  "keywords": [
+    "siyuan",
+    "plugin",
+    "ai",
+    "chat"
+  ],
+  "author": "hendyzone",
   "license": "MIT",
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "8.40.0",
     "@typescript-eslint/parser": "8.40.0",
     "copy-webpack-plugin": "^11.0.0",
-    "css-loader": "^6.7.1",
     "esbuild-loader": "^3.0.1",
     "eslint": "^9.33.0",
-    "mini-css-extract-plugin": "2.3.0",
     "sass": "^1.62.1",
     "sass-loader": "^12.6.0",
     "siyuan": "1.1.6",
     "tslib": "2.4.0",
-    "typescript": "4.8.4",
-    "webpack": "^5.76.0",
-    "webpack-cli": "^5.0.2",
     "zip-webpack-plugin": "^4.0.1",
-    "globals": "^16.3.0"
+    "globals": "^16.3.0",
+    "@types/node": "^20.0.0",
+    "archiver": "^6.0.1",
+    "css-loader": "^6.8.1",
+    "mini-css-extract-plugin": "^2.7.6",
+    "ts-loader": "^9.5.1",
+    "typescript": "^5.3.3",
+    "webpack": "^5.89.0",
+    "webpack-cli": "^5.1.4"
   }
 }

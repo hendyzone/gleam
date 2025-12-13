@@ -1,22 +1,319 @@
-.plugin-sample {
-  &__custom-tab {
-    background-color: var(--b3-theme-background);
-    height: 100%;
-    width: 100%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+/* Gleam Plugin Styles */
+
+.gleam-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--b3-theme-background);
+}
+
+.gleam-header {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--b3-border-color);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.gleam-controls {
+  display: flex;
+  gap: 8px;
+  flex: 1;
+  align-items: center;
+}
+
+.gleam-select {
+  flex: 1;
+  min-width: 0;
+  padding: 4px 8px;
+  border: 1px solid var(--b3-border-color);
+  border-radius: 4px;
+  background: var(--b3-theme-background);
+  color: var(--b3-theme-on-background);
+  font-size: 12px;
+}
+
+.gleam-button {
+  padding: 4px 12px;
+  border: 1px solid var(--b3-border-color);
+  border-radius: 4px;
+  background: var(--b3-theme-background);
+  color: var(--b3-theme-on-background);
+  cursor: pointer;
+  font-size: 12px;
+  transition: background 0.2s;
+
+  &:hover {
+    background: var(--b3-theme-surface);
   }
 
-  &__custom-dock {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
-
-  &__time {
-    background: var(--b3-card-info-background);
-    border-radius: 4px;
-    padding: 2px 8px;
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
 }
+
+.gleam-toggle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+
+  input[type="checkbox"] {
+    cursor: pointer;
+  }
+}
+
+.gleam-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.gleam-message {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  &-user {
+    align-items: flex-end;
+
+    .gleam-message-content {
+      background: var(--b3-theme-primary);
+      color: var(--b3-theme-on-primary);
+    }
+  }
+
+  &-assistant {
+    align-items: flex-start;
+
+    .gleam-message-content {
+      background: var(--b3-theme-surface);
+      color: var(--b3-theme-on-surface);
+      border: 1px solid var(--b3-border-color);
+    }
+  }
+}
+
+.gleam-message-content {
+  max-width: 80%;
+  padding: 8px 12px;
+  border-radius: 8px;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+}
+
+.gleam-message-time {
+  font-size: 10px;
+  color: var(--b3-theme-on-background);
+  opacity: 0.6;
+  padding: 0 4px;
+}
+
+.gleam-input-area {
+  padding: 12px;
+  border-top: 1px solid var(--b3-border-color);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.gleam-input-wrapper {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+}
+
+.gleam-textarea {
+  flex: 1;
+  min-height: 60px;
+  max-height: 200px;
+  padding: 8px;
+  border: 1px solid var(--b3-border-color);
+  border-radius: 4px;
+  background: var(--b3-theme-background);
+  color: var(--b3-theme-on-background);
+  font-size: 14px;
+  font-family: inherit;
+  resize: vertical;
+
+  &:focus {
+    outline: none;
+    border-color: var(--b3-theme-primary);
+  }
+}
+
+.gleam-send-button {
+  padding: 8px 16px;
+  background: var(--b3-theme-primary);
+  color: var(--b3-theme-on-primary);
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: opacity 0.2s;
+
+  &:hover:not(:disabled) {
+    opacity: 0.9;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.gleam-history-panel {
+  max-height: 200px;
+  overflow-y: auto;
+  border-top: 1px solid var(--b3-border-color);
+  padding: 8px;
+  display: none;
+
+  &.show {
+    display: block;
+  }
+}
+
+.gleam-history-item {
+  padding: 8px;
+  border-bottom: 1px solid var(--b3-border-color);
+  cursor: pointer;
+  font-size: 12px;
+  transition: background 0.2s;
+
+  &:hover {
+    background: var(--b3-theme-surface);
+  }
+
+  &-title {
+    font-weight: 500;
+    margin-bottom: 4px;
+  }
+
+  &-time {
+    font-size: 10px;
+    opacity: 0.6;
+  }
+}
+
+.gleam-settings-panel {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--b3-theme-background);
+  border: 1px solid var(--b3-border-color);
+  border-radius: 8px;
+  padding: 24px;
+  max-width: 500px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+  z-index: 10000;
+  display: none;
+
+  &.show {
+    display: block;
+  }
+}
+
+.gleam-settings-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.gleam-settings-title {
+  font-size: 18px;
+  font-weight: 500;
+}
+
+.gleam-settings-close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: var(--b3-theme-on-background);
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.gleam-settings-section {
+  margin-bottom: 24px;
+
+  &-title {
+    font-size: 14px;
+    font-weight: 500;
+    margin-bottom: 12px;
+  }
+}
+
+.gleam-settings-field {
+  margin-bottom: 12px;
+}
+
+.gleam-settings-label {
+  display: block;
+  font-size: 12px;
+  margin-bottom: 4px;
+  color: var(--b3-theme-on-background);
+}
+
+.gleam-settings-input {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid var(--b3-border-color);
+  border-radius: 4px;
+  background: var(--b3-theme-background);
+  color: var(--b3-theme-on-background);
+  font-size: 14px;
+
+  &:focus {
+    outline: none;
+    border-color: var(--b3-theme-primary);
+  }
+}
+
+.gleam-settings-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 24px;
+}
+
+.gleam-loading {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--b3-border-color);
+  border-top-color: var(--b3-theme-primary);
+  border-radius: 50%;
+  animation: gleam-spin 0.6s linear infinite;
+}
+
+@keyframes gleam-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.gleam-error {
+  padding: 8px 12px;
+  background: var(--b3-theme-error);
+  color: var(--b3-theme-on-error);
+  border-radius: 4px;
+  font-size: 12px;
+  margin: 8px 0;
+}
+
