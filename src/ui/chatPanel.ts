@@ -12,7 +12,6 @@ export class ChatPanel {
   private inputArea!: HTMLElement;
   private textarea!: HTMLTextAreaElement;
   private sendButton!: HTMLButtonElement;
-  private insertDocumentButton!: HTMLButtonElement;
   private providerSelect!: HTMLSelectElement;
   private modelSelect!: HTMLSelectElement;
   private contextToggle!: HTMLInputElement;
@@ -71,7 +70,6 @@ export class ChatPanel {
         <div class="gleam-history-panel" id="gleam-history-panel"></div>
         <div class="gleam-input-area">
           <div class="gleam-input-wrapper">
-            <button class="gleam-insert-doc-button" id="gleam-insert-doc-button" title="${this.plugin.i18n.insertDocumentTooltip || '插入文档'}">📄</button>
             <textarea class="gleam-textarea" id="gleam-textarea" placeholder="${this.plugin.i18n.inputPlaceholder}"></textarea>
             <button class="gleam-send-button" id="gleam-send-button">${this.plugin.i18n.send}</button>
           </div>
@@ -83,7 +81,6 @@ export class ChatPanel {
     this.inputArea = this.element.querySelector('.gleam-input-area')!;
     this.textarea = this.element.querySelector('#gleam-textarea') as HTMLTextAreaElement;
     this.sendButton = this.element.querySelector('#gleam-send-button') as HTMLButtonElement;
-    this.insertDocumentButton = this.element.querySelector('#gleam-insert-doc-button') as HTMLButtonElement;
     this.providerSelect = this.element.querySelector('#gleam-provider-select') as HTMLSelectElement;
     this.modelSelect = this.element.querySelector('#gleam-model-select') as HTMLSelectElement;
     this.contextToggle = this.element.querySelector('#gleam-context-toggle') as HTMLInputElement;
@@ -142,7 +139,6 @@ export class ChatPanel {
 
   private attachEventListeners() {
     this.sendButton.addEventListener('click', () => this.handleSend());
-    this.insertDocumentButton.addEventListener('click', () => this.handleInsertDocument());
     this.textarea.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
@@ -288,36 +284,6 @@ export class ChatPanel {
     this.messagesContainer.appendChild(errorElement);
     this.scrollToBottom();
     setTimeout(() => errorElement.remove(), 5000);
-  }
-
-  private async handleInsertDocument() {
-    try {
-      const documentContent = await this.contextInjector.getCurrentDocumentContent();
-      if (!documentContent) {
-        this.showError(this.plugin.i18n.insertDocumentError || '未找到文档内容');
-        return;
-      }
-
-      const textarea = this.textarea;
-      const start = textarea.selectionStart;
-      const end = textarea.selectionEnd;
-      const currentText = textarea.value;
-      
-      const prefix = currentText.substring(0, start);
-      const suffix = currentText.substring(end);
-      
-      const formattedContent = `\n\n--- 文档内容 ---\n${documentContent}\n--- 文档内容结束 ---\n\n`;
-      const newText = prefix + formattedContent + suffix;
-      
-      textarea.value = newText;
-      textarea.focus();
-      
-      const newCursorPos = start + formattedContent.length;
-      textarea.setSelectionRange(newCursorPos, newCursorPos);
-    } catch (error: any) {
-      Logger.error('Failed to insert document:', error);
-      this.showError(error.message || this.plugin.i18n.unknownError);
-    }
   }
 
   private async saveConfig() {

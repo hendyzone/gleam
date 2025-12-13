@@ -11,6 +11,7 @@
   padding: 8px 12px;
   border-bottom: 1px solid var(--b3-border-color);
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
   flex-shrink: 0;
@@ -18,14 +19,16 @@
 
 .gleam-controls {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   flex: 1;
   align-items: center;
+  min-width: 0;
 }
 
 .gleam-select {
   flex: 1;
-  min-width: 0;
+  min-width: 120px;
   padding: 4px 8px;
   border: 1px solid var(--b3-border-color);
   border-radius: 4px;
@@ -43,6 +46,8 @@
   cursor: pointer;
   font-size: 12px;
   transition: background 0.2s;
+  white-space: nowrap;
+  flex-shrink: 0;
 
   &:hover {
     background: var(--b3-theme-surface);
@@ -59,6 +64,8 @@
   align-items: center;
   gap: 4px;
   font-size: 12px;
+  white-space: nowrap;
+  flex-shrink: 0;
 
   input[type="checkbox"] {
     cursor: pointer;
@@ -127,30 +134,6 @@
   display: flex;
   gap: 8px;
   align-items: flex-end;
-}
-
-.gleam-insert-doc-button {
-  padding: 8px 12px;
-  background: var(--b3-theme-surface);
-  color: var(--b3-theme-on-surface);
-  border: 1px solid var(--b3-border-color);
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 16px;
-  line-height: 1;
-  transition: background 0.2s;
-  flex-shrink: 0;
-  height: fit-content;
-
-  &:hover:not(:disabled) {
-    background: var(--b3-theme-surface-hover, var(--b3-theme-surface));
-    opacity: 0.9;
-  }
-
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
 }
 
 .gleam-textarea {
