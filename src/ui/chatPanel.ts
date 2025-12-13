@@ -49,7 +49,13 @@ export class ChatPanel {
   private createUI() {
     this.element.innerHTML = `
       <div class="gleam-container">
-        <div class="gleam-header">
+        <div class="gleam-messages" id="gleam-messages"></div>
+        <div class="gleam-history-panel" id="gleam-history-panel"></div>
+        <div class="gleam-input-area">
+          <div class="gleam-input-wrapper">
+            <textarea class="gleam-textarea" id="gleam-textarea" placeholder="${this.plugin.i18n.inputPlaceholder}"></textarea>
+            <button class="gleam-send-button" id="gleam-send-button">${this.plugin.i18n.send}</button>
+          </div>
           <div class="gleam-controls">
             <select class="gleam-select" id="gleam-provider-select">
               <option value="openrouter">${this.plugin.i18n.provider}: OpenRouter</option>
@@ -62,16 +68,8 @@ export class ChatPanel {
               <input type="checkbox" id="gleam-context-toggle">
               <span>${this.plugin.i18n.contextInjection}</span>
             </label>
-          </div>
-          <button class="gleam-button" id="gleam-new-chat-button">${this.plugin.i18n.newChat || '新建对话'}</button>
-          <button class="gleam-button" id="gleam-history-button">${this.plugin.i18n.history}</button>
-        </div>
-        <div class="gleam-messages" id="gleam-messages"></div>
-        <div class="gleam-history-panel" id="gleam-history-panel"></div>
-        <div class="gleam-input-area">
-          <div class="gleam-input-wrapper">
-            <textarea class="gleam-textarea" id="gleam-textarea" placeholder="${this.plugin.i18n.inputPlaceholder}"></textarea>
-            <button class="gleam-send-button" id="gleam-send-button">${this.plugin.i18n.send}</button>
+            <button class="gleam-button" id="gleam-new-chat-button">${this.plugin.i18n.newChat || '新建对话'}</button>
+            <button class="gleam-button" id="gleam-history-button">${this.plugin.i18n.history}</button>
           </div>
         </div>
       </div>
@@ -87,6 +85,8 @@ export class ChatPanel {
     this.historyButton = this.element.querySelector('#gleam-history-button') as HTMLButtonElement;
     this.newChatButton = this.element.querySelector('#gleam-new-chat-button') as HTMLButtonElement;
     this.historyPanel = this.element.querySelector('#gleam-history-panel')!;
+    
+    this.updateEmptyState();
   }
 
   private async loadConfig() {
@@ -130,11 +130,19 @@ export class ChatPanel {
   }
 
   private showNoMessages() {
-    this.messagesContainer.innerHTML = `
-      <div style="text-align: center; padding: 40px; color: var(--b3-theme-on-background); opacity: 0.6;">
-        ${this.plugin.i18n.noMessages}
-      </div>
-    `;
+    this.updateEmptyState();
+  }
+
+  private updateEmptyState() {
+    if (this.currentMessages.length === 0) {
+      this.messagesContainer.innerHTML = `
+        <div class="gleam-empty-state">
+          <div class="gleam-empty-icon">💬</div>
+          <div class="gleam-empty-title">${this.plugin.i18n.emptyTitle || '开始新的对话'}</div>
+          <div class="gleam-empty-description">${this.plugin.i18n.emptyDescription || '在下方输入框中输入消息，开始与 AI 对话'}</div>
+        </div>
+      `;
+    }
   }
 
   private attachEventListeners() {
@@ -247,7 +255,8 @@ export class ChatPanel {
   }
 
   private addMessage(role: 'user' | 'assistant', content: string): string {
-    if (this.messagesContainer.querySelector('.gleam-message') === null) {
+    // 清除空状态显示
+    if (this.messagesContainer.querySelector('.gleam-empty-state')) {
       this.messagesContainer.innerHTML = '';
     }
 

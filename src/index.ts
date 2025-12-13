@@ -158,7 +158,7 @@ export default class PluginGleam extends Plugin {
             plugin.addDock({
                 config: {
                     position: 'RightBottom',
-                    size: { width: 300, height: 0 },
+                    size: { width: 300, height: 400 },
                     icon: 'iconSparkles',
                     title: this.i18n?.pluginName || 'Gleam'
                 },
@@ -169,6 +169,18 @@ export default class PluginGleam extends Plugin {
                 init() {
                     this.element.innerHTML = '';
                     this.element.appendChild(dockElement);
+                    // 确保容器有高度
+                    if (this.element) {
+                        this.element.style.height = '100%';
+                        this.element.style.display = 'flex';
+                        this.element.style.flexDirection = 'column';
+                    }
+                },
+                resize() {
+                    // 当 dock 大小改变时，确保容器高度正确
+                    if (this.element && dockElement) {
+                        this.element.style.height = '100%';
+                    }
                 },
                 destroy() {
                     // Cleanup if needed
