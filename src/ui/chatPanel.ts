@@ -607,6 +607,21 @@ export class ChatPanel {
 
   async newChat() {
     this.currentMessages = [];
+    this.hasContextInjected = false; // 重置上下文注入标记
+    
+    // 切换到默认供应商和模型
+    const config = await this.storage.getConfig();
+    if (config.currentProvider) {
+      this.providerSelect.value = config.currentProvider;
+      await this.loadModels(config.currentProvider);
+    }
+    if (config.currentModel) {
+      this.modelSelect.value = config.currentModel;
+    }
+    
+    // 保存配置（确保UI状态与配置同步）
+    await this.saveConfig();
+    
     this.showNoMessages();
   }
 }
