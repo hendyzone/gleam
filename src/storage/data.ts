@@ -1,4 +1,5 @@
 import { PluginData, PluginConfig, ChatHistory } from '../utils/types';
+import { Logger } from '../utils/logger';
 
 const DEFAULT_CONFIG: PluginData['config'] = {
   openrouter: {
@@ -11,7 +12,8 @@ const DEFAULT_CONFIG: PluginData['config'] = {
   },
   currentProvider: 'openrouter',
   currentModel: '',
-  enableContext: false
+  enableContext: false,
+  enableDebugLog: false
 };
 
 export class DataStorage {
@@ -31,7 +33,7 @@ export class DataStorage {
         };
       }
     } catch (error) {
-      console.error('Failed to load plugin data:', error);
+      Logger.error('Failed to load plugin data:', error);
     }
     return {
       config: { ...DEFAULT_CONFIG },
@@ -43,7 +45,7 @@ export class DataStorage {
     try {
       await this.plugin.saveData('data.json', data);
     } catch (error) {
-      console.error('Failed to save plugin data:', error);
+      Logger.error('Failed to save plugin data:', error);
       throw error;
     }
   }

@@ -11,6 +11,7 @@ export interface PluginConfig {
   currentProvider: Provider;
   currentModel: string;
   enableContext: boolean;
+  enableDebugLog: boolean;
 }
 
 export interface ChatMessage {

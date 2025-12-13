@@ -4,6 +4,7 @@ import {
 import './index.scss';
 import { ChatPanel } from './ui/chatPanel';
 import { SettingsPanel } from './ui/settingsPanel';
+import { Logger } from './utils/logger';
 
  
 
@@ -15,7 +16,8 @@ export default class PluginGleam extends Plugin {
 
 
     onload() {
-        console.log("onloa!!!!!!!!!!!!!!!!!!!!");
+        Logger.init(this);
+        Logger.log("onload");
         this.initDock();
     }
 
@@ -52,7 +54,7 @@ export default class PluginGleam extends Plugin {
                 }
             });
         } else {
-            console.error('addDock API not available');
+            Logger.error('addDock API not available');
         }
     }
 }

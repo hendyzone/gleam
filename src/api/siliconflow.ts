@@ -1,5 +1,6 @@
 import { BaseAIProvider } from './base';
 import { Provider, AIRequestOptions, AIResponse } from '../utils/types';
+import { Logger } from '../utils/logger';
 
 export class SiliconFlowProvider extends BaseAIProvider {
   name: Provider = 'siliconflow';
@@ -99,7 +100,7 @@ export class SiliconFlowProvider extends BaseAIProvider {
       const data = await response.json();
       return data.data?.map((model: any) => model.id) || [];
     } catch (error) {
-      console.error('Failed to fetch SiliconFlow models:', error);
+      Logger.error('Failed to fetch SiliconFlow models:', error);
       return [
         'deepseek-ai/DeepSeek-V2.5',
         'Qwen/Qwen2.5-72B-Instruct',

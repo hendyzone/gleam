@@ -4,6 +4,7 @@ import { ContextInjector } from '../features/context-injection';
 import { OpenRouterProvider } from '../api/openrouter';
 import { SiliconFlowProvider } from '../api/siliconflow';
 import { AIProvider } from '../api/base';
+import { Logger } from '../utils/logger';
 
 export class ChatPanel {
   private element: HTMLElement;
@@ -123,7 +124,7 @@ export class ChatPanel {
         `<option value="${model}">${model}</option>`
       ).join('');
     } catch (error) {
-      console.error('Failed to load models:', error);
+      Logger.error('Failed to load models:', error);
     }
   }
 
@@ -198,7 +199,7 @@ export class ChatPanel {
       let messages: ChatMessage[] = [...this.currentMessages, { role: 'user', content: message }];
 
       if (config.enableContext) {
-        console.log('[ChatPanel] 上下文注入已启用，开始获取文档内容');
+        Logger.log('[ChatPanel] 上下文注入已启用，开始获取文档内容');
         const documentContent = await this.contextInjector.getCurrentDocumentContent();
         if (documentContent) {
           const contextPrompt = this.contextInjector.buildContextPrompt(documentContent);
@@ -206,13 +207,13 @@ export class ChatPanel {
             { role: 'system', content: contextPrompt },
             ...messages
           ];
-          console.log('[ChatPanel] 上下文注入成功，消息数量:', messages.length);
-          console.log('[ChatPanel] 消息结构:', messages.map(m => ({ role: m.role, contentLength: m.content.length })));
+          Logger.log('[ChatPanel] 上下文注入成功，消息数量:', messages.length);
+          Logger.log('[ChatPanel] 消息结构:', messages.map(m => ({ role: m.role, contentLength: m.content.length })));
         } else {
-          console.warn('[ChatPanel] 上下文注入已启用但未获取到文档内容');
+          Logger.warn('[ChatPanel] 上下文注入已启用但未获取到文档内容');
         }
       } else {
-        console.log('[ChatPanel] 上下文注入未启用');
+        Logger.log('[ChatPanel] 上下文注入未启用');
       }
 
       const aiProvider = this.providers.get(config.currentProvider);
@@ -299,6 +300,7 @@ export class ChatPanel {
     config.currentModel = this.modelSelect.value;
     config.enableContext = this.contextToggle.checked;
     await this.storage.saveConfig(config);
+    await Logger.updateEnabled();
   }
 
   private async saveCurrentChat() {

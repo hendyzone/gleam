@@ -1,4 +1,5 @@
 import { DataStorage } from '../storage/data';
+import { Logger } from '../utils/logger';
 
 export class SettingsPanel {
   private panel!: HTMLElement;
@@ -34,6 +35,15 @@ export class SettingsPanel {
             <input type="password" class="gleam-settings-input" id="gleam-siliconflow-key" placeholder="sk-...">
           </div>
         </div>
+        <div class="gleam-settings-section">
+          <div class="gleam-settings-section-title">${this.plugin.i18n.debug || '调试'}</div>
+          <div class="gleam-settings-field">
+            <label class="gleam-toggle">
+              <input type="checkbox" id="gleam-debug-log-toggle">
+              <span>${this.plugin.i18n.enableDebugLog || '启用调试日志'}</span>
+            </label>
+          </div>
+        </div>
         <div class="gleam-settings-actions">
           <button class="gleam-button" id="gleam-settings-cancel">${this.plugin.i18n.cancel}</button>
           <button class="gleam-button" id="gleam-settings-save">${this.plugin.i18n.save}</button>
@@ -66,6 +76,7 @@ export class SettingsPanel {
     const config = await this.storage.getConfig();
     const openrouterKeyInput = this.panel.querySelector('#gleam-openrouter-key') as HTMLInputElement;
     const siliconflowKeyInput = this.panel.querySelector('#gleam-siliconflow-key') as HTMLInputElement;
+    const debugLogToggle = this.panel.querySelector('#gleam-debug-log-toggle') as HTMLInputElement;
 
     if (openrouterKeyInput) {
       openrouterKeyInput.value = config.openrouter.apiKey;
@@ -73,17 +84,23 @@ export class SettingsPanel {
     if (siliconflowKeyInput) {
       siliconflowKeyInput.value = config.siliconflow.apiKey;
     }
+    if (debugLogToggle) {
+      debugLogToggle.checked = config.enableDebugLog || false;
+    }
   }
 
   private async saveSettings() {
     const openrouterKeyInput = this.panel.querySelector('#gleam-openrouter-key') as HTMLInputElement;
     const siliconflowKeyInput = this.panel.querySelector('#gleam-siliconflow-key') as HTMLInputElement;
+    const debugLogToggle = this.panel.querySelector('#gleam-debug-log-toggle') as HTMLInputElement;
 
     const config = await this.storage.getConfig();
     config.openrouter.apiKey = openrouterKeyInput?.value || '';
     config.siliconflow.apiKey = siliconflowKeyInput?.value || '';
+    config.enableDebugLog = debugLogToggle?.checked || false;
 
     await this.storage.saveConfig(config);
+    await Logger.updateEnabled();
     this.hide();
 
     if (typeof (window as any).gleamChatPanel?.loadModels === 'function') {

@@ -1,5 +1,6 @@
 import { BaseAIProvider } from './base';
 import { Provider, AIRequestOptions, AIResponse } from '../utils/types';
+import { Logger } from '../utils/logger';
 
 export class OpenRouterProvider extends BaseAIProvider {
   name: Provider = 'openrouter';
@@ -99,7 +100,7 @@ export class OpenRouterProvider extends BaseAIProvider {
       const data = await response.json();
       return data.data?.map((model: any) => model.id) || [];
     } catch (error) {
-      console.error('Failed to fetch OpenRouter models:', error);
+      Logger.error('Failed to fetch OpenRouter models:', error);
       return [
         'openai/gpt-4-turbo',
         'openai/gpt-3.5-turbo',
