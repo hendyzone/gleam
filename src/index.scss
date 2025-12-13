@@ -135,6 +135,121 @@
   border-radius: 8px;
   word-wrap: break-word;
   white-space: pre-wrap;
+
+  // Markdown 样式
+  h1, h2, h3, h4, h5, h6 {
+    margin: 16px 0 8px 0;
+    font-weight: 600;
+    line-height: 1.4;
+    color: var(--b3-theme-on-background);
+  }
+
+  h1 { 
+    font-size: 1.8em; 
+    margin-top: 20px;
+    border-bottom: 2px solid var(--b3-border-color);
+    padding-bottom: 8px;
+  }
+  h2 { 
+    font-size: 1.5em; 
+    margin-top: 18px;
+    border-bottom: 1px solid var(--b3-border-color);
+    padding-bottom: 6px;
+  }
+  h3 { 
+    font-size: 1.3em; 
+    margin-top: 16px;
+  }
+  h4 { 
+    font-size: 1.15em; 
+    margin-top: 14px;
+  }
+  h5 { 
+    font-size: 1.05em; 
+    margin-top: 12px;
+  }
+  h6 { 
+    font-size: 1em; 
+    margin-top: 10px;
+    color: var(--b3-theme-on-background);
+    opacity: 0.8;
+  }
+
+  p {
+    margin: 8px 0;
+    line-height: 1.6;
+  }
+
+  code {
+    background: rgba(0, 0, 0, 0.1);
+    padding: 2px 4px;
+    border-radius: 3px;
+    font-family: 'Courier New', monospace;
+    font-size: 0.9em;
+  }
+
+  pre {
+    background: rgba(0, 0, 0, 0.05);
+    padding: 12px;
+    border-radius: 4px;
+    overflow-x: auto;
+    margin: 8px 0;
+
+    code {
+      background: none;
+      padding: 0;
+    }
+  }
+
+  ul, ol {
+    margin: 8px 0;
+    padding-left: 24px;
+  }
+
+  li {
+    margin: 4px 0;
+    line-height: 1.6;
+  }
+
+  blockquote {
+    border-left: 3px solid var(--b3-theme-primary);
+    padding-left: 12px;
+    margin: 8px 0;
+    color: var(--b3-theme-on-background);
+    opacity: 0.8;
+  }
+
+  a {
+    color: var(--b3-theme-primary);
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
+  table {
+    border-collapse: collapse;
+    margin: 8px 0;
+    width: 100%;
+
+    th, td {
+      border: 1px solid var(--b3-border-color);
+      padding: 6px 12px;
+      text-align: left;
+    }
+
+    th {
+      background: var(--b3-theme-surface);
+      font-weight: 600;
+    }
+  }
+
+  hr {
+    border: none;
+    border-top: 1px solid var(--b3-border-color);
+    margin: 16px 0;
+  }
 }
 
 .gleam-message-time {
