@@ -17,6 +17,7 @@ export interface PluginConfig {
 export interface ChatMessage {
   role: 'user' | 'assistant' | 'system';
   content: string;
+  images?: string[]; // 图片 URL 或 base64 数据
 }
 
 export interface ChatHistory {
@@ -38,6 +39,7 @@ export interface AIRequestOptions {
   stream?: boolean;
   temperature?: number;
   maxTokens?: number;
+  images?: string[]; // 图片输入（用于图生图）
 }
 
 export interface AIResponse {
