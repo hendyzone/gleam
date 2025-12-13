@@ -1,14 +1,17 @@
 import { DataStorage } from '../storage/data';
 import { Logger } from '../utils/logger';
+import { TestPanel } from './testPanel';
 
 export class SettingsPanel {
   private panel!: HTMLElement;
   private plugin: any;
   private storage: DataStorage;
+  private testPanel: TestPanel;
 
   constructor(plugin: any) {
     this.plugin = plugin;
     this.storage = new DataStorage(plugin);
+    this.testPanel = new TestPanel(plugin);
     this.createPanel();
   }
 
@@ -44,6 +47,12 @@ export class SettingsPanel {
             </label>
           </div>
         </div>
+        <div class="gleam-settings-section">
+          <div class="gleam-settings-section-title">${this.plugin.i18n.testTools || '测试工具'}</div>
+          <div class="gleam-settings-field">
+            <button class="gleam-button" id="gleam-test-button">${this.plugin.i18n.openTestPanel || '打开测试面板'}</button>
+          </div>
+        </div>
         <div class="gleam-settings-actions">
           <button class="gleam-button" id="gleam-settings-cancel">${this.plugin.i18n.cancel}</button>
           <button class="gleam-button" id="gleam-settings-save">${this.plugin.i18n.save}</button>
@@ -60,10 +69,15 @@ export class SettingsPanel {
     const closeButton = this.panel.querySelector('#gleam-settings-close');
     const cancelButton = this.panel.querySelector('#gleam-settings-cancel');
     const saveButton = this.panel.querySelector('#gleam-settings-save');
+    const testButton = this.panel.querySelector('#gleam-test-button');
 
     closeButton?.addEventListener('click', () => this.hide());
     cancelButton?.addEventListener('click', () => this.hide());
     saveButton?.addEventListener('click', () => this.saveSettings());
+    testButton?.addEventListener('click', () => {
+      this.hide();
+      this.testPanel.show();
+    });
 
     this.panel.addEventListener('click', (e) => {
       if (e.target === this.panel) {

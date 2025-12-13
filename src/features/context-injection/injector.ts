@@ -1,120 +1,32 @@
 import { Logger } from '../../utils/logger';
+import { DocumentHelper } from '../../utils/documentHelper';
 
 export class ContextInjector {
   private plugin: any;
+  private documentHelper: DocumentHelper;
 
   constructor(plugin: any) {
     this.plugin = plugin;
+    this.documentHelper = new DocumentHelper(plugin);
   }
 
   async getCurrentDocumentContent(): Promise<string> {
     try {
-      const blockId = this.getCurrentBlockId();
-      Logger.log('[ContextInjector] 开始获取文档内容, blockId:', blockId);
-      
-      if (!blockId) {
-        Logger.warn('[ContextInjector] 未找到当前块ID');
-        return '';
+      // 使用选中的块内容，如果没有选中则返回空
+      const content = await this.documentHelper.getSelectedBlockContent();
+      Logger.log('[ContextInjector] 提取的文本长度:', content.length, '字符');
+      if (content) {
+        Logger.log('[ContextInjector] 提取的文本预览:', content.substring(0, 100) + '...');
       }
-
-      const response = await fetch('/api/block/getBlockInfo', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          id: blockId
-        })
-      });
-
-      if (!response.ok) {
-        Logger.warn('[ContextInjector] API调用失败, status:', response.status, response.statusText);
-        return '';
-      }
-
-      const data = await response.json();
-      Logger.log('[ContextInjector] API响应:', data);
-      
-      if (data.data?.content) {
-        const extractedText = this.extractTextFromContent(data.data.content);
-        Logger.log('[ContextInjector] 提取的文本长度:', extractedText.length, '字符');
-        Logger.log('[ContextInjector] 提取的文本预览:', extractedText.substring(0, 100) + '...');
-        return extractedText;
-      }
-
-      Logger.warn('[ContextInjector] API响应中没有content字段');
-      return '';
+      return content;
     } catch (error) {
       Logger.error('[ContextInjector] 获取文档内容失败:', error);
       return '';
     }
   }
 
-  private getCurrentBlockId(): string {
-    Logger.log('[ContextInjector] 开始获取当前块ID');
-    
-    const protyle = (window as any).siyuan?.ws?.app?.plugins?.pluginInstances?.find(
-      (p: any) => p.name === 'gleam'
-    )?.protyle;
-
-    if (protyle?.block?.id) {
-      Logger.log('[ContextInjector] 从protyle获取块ID:', protyle.block.id);
-      return protyle.block.id;
-    }
-
-    const activeElement = document.activeElement;
-    Logger.log('[ContextInjector] 当前活动元素:', activeElement);
-    
-    if (activeElement?.closest('.protyle-content')) {
-      const blockElement = activeElement.closest('[data-node-id]');
-      if (blockElement) {
-        const blockId = blockElement.getAttribute('data-node-id') || '';
-        Logger.log('[ContextInjector] 从活动元素获取块ID:', blockId);
-        return blockId;
-      }
-    }
-
-    Logger.warn('[ContextInjector] 未找到块ID');
-    return '';
-  }
-
-  private extractTextFromContent(content: string): string {
-    try {
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(content, 'text/html');
-      const text = doc.body.textContent || '';
-      return text.trim();
-    } catch (error) {
-      return content;
-    }
-  }
-
-  async getDocumentTree(): Promise<any> {
-    try {
-      const blockId = this.getCurrentBlockId();
-      if (!blockId) {
-        return null;
-      }
-
-      const response = await fetch('/api/filetree/getDoc', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          id: blockId
-        })
-      });
-
-      if (!response.ok) {
-        return null;
-      }
-
-      return await response.json();
-    } catch (error) {
-      Logger.error('Failed to get document tree:', error);
-      return null;
-    }
+  async getDocumentTree(blockId: string): Promise<any> {
+    return await this.documentHelper.getDocumentTree(blockId);
   }
 
   buildContextPrompt(documentContent: string): string {
