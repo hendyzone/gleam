@@ -48,6 +48,16 @@ export class SettingsPanel {
           </div>
         </div>
         <div class="gleam-settings-section">
+          <div class="gleam-settings-section-title">${this.plugin.i18n.history || '历史记录'}</div>
+          <div class="gleam-settings-field">
+            <label class="gleam-settings-label">${this.plugin.i18n.maxHistoryCount || '最大历史数量'}</label>
+            <input type="number" class="gleam-settings-input" id="gleam-max-history-count" min="1" max="1000" placeholder="50">
+            <div style="font-size: 12px; color: var(--b3-theme-on-background); opacity: 0.7; margin-top: 4px;">
+              ${this.plugin.i18n.maxHistoryCountDesc || '超过此数量的未收藏历史记录将被自动删除'}
+            </div>
+          </div>
+        </div>
+        <div class="gleam-settings-section">
           <div class="gleam-settings-section-title">${this.plugin.i18n.testTools || '测试工具'}</div>
           <div class="gleam-settings-field">
             <button class="gleam-button" id="gleam-test-button">${this.plugin.i18n.openTestPanel || '打开测试面板'}</button>
@@ -91,6 +101,7 @@ export class SettingsPanel {
     const openrouterKeyInput = this.panel.querySelector('#gleam-openrouter-key') as HTMLInputElement;
     const siliconflowKeyInput = this.panel.querySelector('#gleam-siliconflow-key') as HTMLInputElement;
     const debugLogToggle = this.panel.querySelector('#gleam-debug-log-toggle') as HTMLInputElement;
+    const maxHistoryCountInput = this.panel.querySelector('#gleam-max-history-count') as HTMLInputElement;
 
     if (openrouterKeyInput) {
       openrouterKeyInput.value = config.openrouter.apiKey;
@@ -101,20 +112,29 @@ export class SettingsPanel {
     if (debugLogToggle) {
       debugLogToggle.checked = config.enableDebugLog || false;
     }
+    if (maxHistoryCountInput) {
+      maxHistoryCountInput.value = String(config.maxHistoryCount || 50);
+    }
   }
 
   private async saveSettings() {
     const openrouterKeyInput = this.panel.querySelector('#gleam-openrouter-key') as HTMLInputElement;
     const siliconflowKeyInput = this.panel.querySelector('#gleam-siliconflow-key') as HTMLInputElement;
     const debugLogToggle = this.panel.querySelector('#gleam-debug-log-toggle') as HTMLInputElement;
+    const maxHistoryCountInput = this.panel.querySelector('#gleam-max-history-count') as HTMLInputElement;
 
     const config = await this.storage.getConfig();
     config.openrouter.apiKey = openrouterKeyInput?.value || '';
     config.siliconflow.apiKey = siliconflowKeyInput?.value || '';
     config.enableDebugLog = debugLogToggle?.checked || false;
+    config.maxHistoryCount = Math.max(1, Math.min(1000, parseInt(maxHistoryCountInput?.value || '50', 10) || 50));
 
     await this.storage.saveConfig(config);
     await Logger.updateEnabled();
+    
+    // 应用新的历史数量限制
+    await this.storage.applyHistoryLimit();
+    
     this.hide();
 
     if (typeof (window as any).gleamChatPanel?.loadModels === 'function') {

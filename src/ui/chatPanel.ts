@@ -537,21 +537,44 @@ export class ChatPanel {
       return;
     }
 
-    this.historyPanel.innerHTML = history.map(item => `
+    this.historyPanel.innerHTML = history.map((item, index) => `
       <div class="gleam-history-item" data-id="${item.id}">
-        <div class="gleam-history-item-title">${this.escapeHtml(item.title)}</div>
-        <div class="gleam-history-item-time">${new Date(item.timestamp).toLocaleString()}</div>
+        <div class="gleam-history-item-number">${index + 1}</div>
+        <div class="gleam-history-item-content">
+          <div class="gleam-history-item-title">${this.escapeHtml(item.title)}</div>
+          <div class="gleam-history-item-time">${new Date(item.timestamp).toLocaleString()}</div>
+        </div>
+        <button class="gleam-history-favorite ${item.isFavorite ? 'active' : ''}" 
+                data-id="${item.id}" 
+                title="${item.isFavorite ? '取消收藏' : '收藏'}">
+          ${item.isFavorite ? '⭐' : '☆'}
+        </button>
       </div>
     `).join('');
 
     this.historyPanel.querySelectorAll('.gleam-history-item').forEach(item => {
-      item.addEventListener('click', async () => {
-        const id = item.getAttribute('data-id');
-        if (id) {
-          await this.loadChatFromHistory(id);
-          this.historyPanel.classList.remove('show');
+      const id = item.getAttribute('data-id');
+      if (!id) return;
+      
+      // 点击历史项加载对话
+      item.addEventListener('click', async (e) => {
+        // 如果点击的是收藏按钮，不加载对话
+        if ((e.target as HTMLElement).closest('.gleam-history-favorite')) {
+          return;
         }
+        await this.loadChatFromHistory(id);
+        this.historyPanel.classList.remove('show');
       });
+      
+      // 收藏按钮点击事件
+      const favoriteBtn = item.querySelector('.gleam-history-favorite') as HTMLButtonElement;
+      if (favoriteBtn) {
+        favoriteBtn.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          await this.toggleFavorite(id);
+          this.loadHistoryList(); // 重新加载历史列表以更新UI
+        });
+      }
     });
   }
 
@@ -573,6 +596,13 @@ export class ChatPanel {
         this.addMessage(msg.role as 'user' | 'assistant', msg.content);
       }
     });
+  }
+
+  /**
+   * 切换收藏状态
+   */
+  private async toggleFavorite(id: string): Promise<void> {
+    await this.storage.toggleFavorite(id);
   }
 
   async newChat() {

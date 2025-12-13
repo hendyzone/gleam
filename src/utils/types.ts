@@ -12,6 +12,7 @@ export interface PluginConfig {
   currentModel: string;
   enableContext: boolean;
   enableDebugLog: boolean;
+  maxHistoryCount: number; // 最大历史数量
 }
 
 export interface ChatMessage {
@@ -24,6 +25,7 @@ export interface ChatHistory {
   title: string;
   messages: ChatMessage[];
   timestamp: number;
+  isFavorite?: boolean; // 是否已收藏
 }
 
 export interface PluginData {

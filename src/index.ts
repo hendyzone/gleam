@@ -115,6 +115,39 @@ export default class PluginGleam extends Plugin {
                 return checkbox;
             }
         });
+
+        // 最大历史数量
+        this.setting.addItem({
+            title: this.i18n.maxHistoryCount || '最大历史数量',
+            direction: "row",
+            description: this.i18n.maxHistoryCountDesc || '超过此数量的未收藏历史记录将被自动删除',
+            createActionElement: () => {
+                const input = document.createElement('input');
+                input.type = 'number';
+                input.className = 'b3-text-field fn__flex-1';
+                input.placeholder = '50';
+                input.min = '1';
+                input.max = '1000';
+                
+                if (!this.data) {
+                    this.data = {};
+                }
+                
+                this.loadSettings().then(config => {
+                    input.value = String(config.maxHistoryCount || 50);
+                    this.data.maxHistoryCount = config.maxHistoryCount || 50;
+                });
+
+                input.addEventListener('input', () => {
+                    const value = parseInt(input.value, 10);
+                    if (!isNaN(value) && value >= 1 && value <= 1000) {
+                        this.data.maxHistoryCount = value;
+                    }
+                });
+
+                return input;
+            }
+        });
     }
 
     private async loadSettings() {
@@ -134,10 +167,16 @@ export default class PluginGleam extends Plugin {
             if (this.data.enableDebugLog !== undefined) {
                 config.enableDebugLog = this.data.enableDebugLog;
             }
+            if (this.data.maxHistoryCount !== undefined) {
+                config.maxHistoryCount = Math.max(1, Math.min(1000, this.data.maxHistoryCount || 50));
+            }
         }
 
         await this.storage.saveConfig(config);
         await Logger.updateEnabled();
+        
+        // 应用新的历史数量限制
+        await this.storage.applyHistoryLimit();
 
         if (typeof (window as any).gleamChatPanel?.loadModels === 'function') {
             await (window as any).gleamChatPanel.loadModels(config.currentProvider);
