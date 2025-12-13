@@ -3,8 +3,12 @@ import { DataStorage } from '../storage/data';
 import { ContextInjector } from '../features/context-injection';
 import { OpenRouterProvider } from '../api/openrouter';
 import { AIProvider } from '../api/base';
-import { Lute } from 'siyuan';
 import { Logger } from '../utils/logger';
+import { MarkdownRenderer } from './utils/markdown';
+import { MessageRenderer } from './components/messageRenderer';
+import { ImageHandler } from './components/imageHandler';
+import { HistoryManager } from './components/historyManager';
+import { ModelDialog } from './components/modelDialog';
 
 export class ChatPanel {
   private element: HTMLElement;
@@ -16,7 +20,7 @@ export class ChatPanel {
   private modelButton!: HTMLButtonElement; // 模型选择按钮
   private allModels: string[] = []; // 存储所有模型ID列表（用于兼容）
   private allModelsInfo: ModelInfo[] = []; // 存储所有模型详细信息
-  private modelDialog!: HTMLElement; // 模型选择对话框
+  private modelDialog!: ModelDialog; // 模型选择对话框
   private contextToggle!: HTMLInputElement;
   private historyButton!: HTMLButtonElement;
   private newChatButton!: HTMLButtonElement;
@@ -98,7 +102,14 @@ export class ChatPanel {
     this.imagePreviewContainer = this.element.querySelector('#gleam-image-preview')!;
     
     // 创建模型选择对话框
-    this.createModelDialog();
+    this.modelDialog = new ModelDialog(
+      this.plugin.i18n,
+      (modelId: string) => {
+        this.modelSelect.value = modelId;
+        this.updateModelButtonText(modelId);
+        this.saveConfig();
+      }
+    );
     
     this.updateEmptyState();
   }
@@ -169,47 +180,6 @@ export class ChatPanel {
   }
 
   /**
-   * 创建模型选择对话框
-   */
-  private createModelDialog() {
-    this.modelDialog = document.createElement('div');
-    this.modelDialog.className = 'gleam-model-dialog';
-    this.modelDialog.innerHTML = `
-      <div class="gleam-model-dialog-content">
-        <div class="gleam-model-dialog-header">
-          <div class="gleam-model-dialog-title">${this.plugin.i18n.selectModel || '选择模型'}</div>
-          <button class="gleam-model-dialog-close">&times;</button>
-        </div>
-        <div class="gleam-model-dialog-search">
-          <input type="text" class="gleam-model-dialog-search-input" placeholder="${this.plugin.i18n.searchModel || '搜索模型...'}" autocomplete="off">
-        </div>
-        <div class="gleam-model-dialog-list"></div>
-      </div>
-    `;
-    document.body.appendChild(this.modelDialog);
-    
-    // 关闭按钮事件
-    const closeBtn = this.modelDialog.querySelector('.gleam-model-dialog-close') as HTMLButtonElement;
-    closeBtn.addEventListener('click', () => this.hideModelDialog());
-    
-    // 点击外部关闭
-    this.modelDialog.addEventListener('click', (e) => {
-      if (e.target === this.modelDialog) {
-        this.hideModelDialog();
-      }
-    });
-    
-    // 搜索功能
-    const searchInput = this.modelDialog.querySelector('.gleam-model-dialog-search-input') as HTMLInputElement;
-    const listContainer = this.modelDialog.querySelector('.gleam-model-dialog-list') as HTMLElement;
-    
-    searchInput.addEventListener('input', (e) => {
-      const keyword = (e.target as HTMLInputElement).value.toLowerCase();
-      this.renderModelDialogList(keyword, listContainer);
-    });
-  }
-
-  /**
    * 显示模型选择对话框
    */
   private async showModelDialog() {
@@ -236,78 +206,9 @@ export class ChatPanel {
       }
     }
     
-    const listContainer = this.modelDialog.querySelector('.gleam-model-dialog-list') as HTMLElement;
-    const searchInput = this.modelDialog.querySelector('.gleam-model-dialog-search-input') as HTMLInputElement;
-    searchInput.value = '';
-    this.renderModelDialogList('', listContainer);
-    this.modelDialog.classList.add('show');
-    searchInput.focus();
+    this.modelDialog.show(this.allModelsInfo, this.modelSelect.value);
   }
 
-  /**
-   * 隐藏模型选择对话框
-   */
-  private hideModelDialog() {
-    this.modelDialog.classList.remove('show');
-  }
-
-  /**
-   * 渲染模型对话框列表
-   */
-  private renderModelDialogList(keyword: string, container: HTMLElement) {
-    let modelsInfo = this.allModelsInfo;
-    
-    if (keyword) {
-      const lowerKeyword = keyword.toLowerCase();
-      modelsInfo = this.allModelsInfo.filter(model => 
-        model.id.toLowerCase().includes(lowerKeyword) ||
-        model.name.toLowerCase().includes(lowerKeyword)
-      );
-    }
-    
-    const currentValue = this.modelSelect.value;
-    
-    // 模态标签映射
-    const modalityLabels: Record<string, string> = {
-      text: '文本',
-      image: '图片',
-      file: '文件',
-      audio: '音频',
-      video: '视频',
-      embeddings: '嵌入'
-    };
-    
-    if (modelsInfo.length === 0) {
-      container.innerHTML = `<div style="padding: 20px; text-align: center; opacity: 0.7; color: var(--b3-theme-on-background);">${this.plugin.i18n.noModelsFound || '未找到模型'}</div>`;
-      return;
-    }
-    
-    container.innerHTML = modelsInfo.map(model => {
-      const isSelected = model.id === currentValue;
-      const inputMods = (model.inputModalities || ['text']).map(m => modalityLabels[m] || m).join(', ');
-      const outputMods = (model.outputModalities || ['text']).map(m => modalityLabels[m] || m).join(', ');
-      
-      return `<div class="gleam-model-dialog-item ${isSelected ? 'selected' : ''}" data-value="${this.escapeHtml(model.id)}">
-        <div class="gleam-model-dialog-item-name">${this.escapeHtml(model.name || model.id)}</div>
-        <div class="gleam-model-dialog-item-id">${this.escapeHtml(model.id)}</div>
-        <div class="gleam-model-dialog-item-modalities">
-          <span class="gleam-modality-badge input">输入: ${this.escapeHtml(inputMods)}</span>
-          <span class="gleam-modality-badge output">输出: ${this.escapeHtml(outputMods)}</span>
-        </div>
-      </div>`;
-    }).join('');
-    
-    // 添加点击事件
-    container.querySelectorAll('.gleam-model-dialog-item').forEach(item => {
-      item.addEventListener('click', () => {
-        const value = item.getAttribute('data-value') || '';
-        this.modelSelect.value = value;
-        this.updateModelButtonText(value);
-        this.hideModelDialog();
-        this.saveConfig();
-      });
-    });
-  }
 
   /**
    * 更新模型按钮文本
@@ -361,8 +262,12 @@ export class ChatPanel {
     });
     
     // 图片选择事件
-    this.imageInput.addEventListener('change', (e) => {
-      this.handleImageSelect(e);
+    this.imageInput.addEventListener('change', async (e) => {
+      const images = await ImageHandler.handleImageSelect(e, (msg) => this.showError(msg));
+      this.selectedImages.push(...images);
+      this.updateImagePreview();
+      // 清空 input，允许重复选择同一文件
+      (e.target as HTMLInputElement).value = '';
     });
 
     // 模型选择按钮点击事件
@@ -381,34 +286,6 @@ export class ChatPanel {
     this.newChatButton.addEventListener('click', () => this.newChat());
   }
 
-  /**
-   * 处理图片选择
-   */
-  private async handleImageSelect(event: Event) {
-    const input = event.target as HTMLInputElement;
-    const files = input.files;
-    if (!files || files.length === 0) return;
-
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
-      if (!file.type.startsWith('image/')) {
-        this.showError('只能选择图片文件');
-        continue;
-      }
-
-      try {
-        const base64 = await this.fileToBase64(file);
-        this.selectedImages.push(base64);
-        this.updateImagePreview();
-      } catch (error) {
-        Logger.error('[ChatPanel] 图片转换失败:', error);
-        this.showError('图片加载失败');
-      }
-    }
-
-    // 清空 input，允许重复选择同一文件
-    input.value = '';
-  }
 
   /**
    * 将文件转换为 base64
@@ -429,28 +306,14 @@ export class ChatPanel {
    * 更新图片预览
    */
   private updateImagePreview() {
-    if (this.selectedImages.length === 0) {
-      this.imagePreviewContainer.innerHTML = '';
-      this.imagePreviewContainer.classList.remove('show');
-      return;
-    }
-
-    this.imagePreviewContainer.classList.add('show');
-    this.imagePreviewContainer.innerHTML = this.selectedImages.map((image, index) => `
-      <div class="gleam-image-preview-item">
-        <img src="${this.escapeHtml(image)}" alt="Preview ${index + 1}">
-        <button class="gleam-image-preview-remove" data-index="${index}" title="删除">×</button>
-      </div>
-    `).join('');
-
-    // 添加删除按钮事件
-    this.imagePreviewContainer.querySelectorAll('.gleam-image-preview-remove').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const index = parseInt((e.target as HTMLElement).getAttribute('data-index') || '0');
+    ImageHandler.updateImagePreview(
+      this.imagePreviewContainer,
+      this.selectedImages,
+      (index: number) => {
         this.selectedImages.splice(index, 1);
         this.updateImagePreview();
-      });
-    });
+      }
+    );
   }
 
   private async handleSend() {
@@ -567,7 +430,7 @@ export class ChatPanel {
           }
           
           // 渲染内容（包括图片）
-          const html = this.renderMessageContent(fullContent, imageUrls, supportsImageOutput);
+          const html = MessageRenderer.renderMessageContent(fullContent, imageUrls, supportsImageOutput);
           contentElement.innerHTML = html;
           this.scrollToBottom();
         }
@@ -627,12 +490,12 @@ export class ChatPanel {
     
     // 渲染内容（包括图片）
     const contentHtml = role === 'assistant' 
-      ? this.renderMessageContent(content, images || [], supportsImageOutput)
-      : this.renderMessageContent(this.escapeHtml(content), images || [], false);
+      ? MessageRenderer.renderMessageContent(content, images || [], supportsImageOutput)
+      : MessageRenderer.renderMessageContent(MarkdownRenderer.escapeHtml(content), images || [], false);
     
     // 为助手消息添加复制按钮和状态指示器
     const copyButton = role === 'assistant' 
-      ? '<button class="gleam-copy-button" title="复制" data-content="' + this.escapeHtml(content) + '">📋</button>'
+      ? '<button class="gleam-copy-button" title="复制" data-content="' + MarkdownRenderer.escapeHtml(content) + '">📋</button>'
       : '';
     const statusIndicator = role === 'assistant'
       ? '<div class="gleam-message-status"></div>'
@@ -665,184 +528,6 @@ export class ChatPanel {
     return messageId;
   }
 
-  private escapeHtml(text: string): string {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-  }
-
-  /**
-   * 渲染消息内容（包括文本和图片）
-   */
-  private renderMessageContent(content: string, images: string[], supportsImageOutput: boolean): string {
-    let html = '';
-    
-    // 如果有图片，先渲染图片
-    if (images && images.length > 0) {
-      images.forEach(imageUrl => {
-        html += `<div class="gleam-message-image"><img src="${this.escapeHtml(imageUrl)}" alt="Generated image" loading="lazy"></div>`;
-      });
-    }
-    
-    // 如果有文本内容，渲染文本
-    if (content && content.trim()) {
-      const textHtml = supportsImageOutput ? this.renderMarkdown(content) : this.renderMarkdown(content);
-      html += textHtml;
-    }
-    
-    return html || '<div class="gleam-message-empty">无内容</div>';
-  }
-
-  /**
-   * 将 Markdown 文本渲染为 HTML
-   */
-  private renderMarkdown(markdown: string): string {
-    try {
-      // 获取 Lute 实例（从任意编辑器实例中获取）
-      const editors = (window as any).siyuan?.getAllEditor?.() || [];
-      let lute: any = null;
-      
-      if (editors.length > 0) {
-        const editor = editors[0] as any;
-        lute = editor?.protyle?.lute;
-      }
-      
-      // 如果没有找到 Lute，尝试从全局获取
-      if (!lute && (window as any).siyuan?.Lute) {
-        lute = new (window as any).siyuan.Lute();
-      }
-      
-      // 如果仍然没有，使用简化的 Markdown 渲染
-      if (!lute) {
-        return this.simpleMarkdownRender(markdown);
-      }
-      
-      // 使用 Lute 渲染 Markdown
-      return lute.Md2HTML(markdown);
-    } catch (error) {
-      Logger.error('[ChatPanel] Markdown 渲染失败:', error);
-      // 降级到简单渲染
-      return this.simpleMarkdownRender(markdown);
-    }
-  }
-
-  /**
-   * 简单的 Markdown 渲染（降级方案）
-   */
-  private simpleMarkdownRender(markdown: string): string {
-    let html = markdown;
-    
-    // 代码块（必须在转义之前处理，使用特殊标记保护）
-    const codeBlocks: string[] = [];
-    html = html.replace(/```(\w+)?\n([\s\S]*?)```/g, (match, lang, code) => {
-      const placeholder = `__CODE_BLOCK_${codeBlocks.length}__`;
-      codeBlocks.push(`<pre><code class="language-${lang || 'text'}">${this.escapeHtml(code)}</code></pre>`);
-      return placeholder;
-    });
-    
-    // 行内代码（使用特殊标记保护）
-    const inlineCodes: string[] = [];
-    html = html.replace(/`([^`]+)`/g, (match, code) => {
-      const placeholder = `__INLINE_CODE_${inlineCodes.length}__`;
-      inlineCodes.push(`<code>${this.escapeHtml(code)}</code>`);
-      return placeholder;
-    });
-    
-    // 标题（必须在转义之前处理，按从多到少的顺序）
-    html = html.replace(/^###### (.*)$/gim, '<h6>$1</h6>');
-    html = html.replace(/^##### (.*)$/gim, '<h5>$1</h5>');
-    html = html.replace(/^#### (.*)$/gim, '<h4>$1</h4>');
-    html = html.replace(/^### (.*)$/gim, '<h3>$1</h3>');
-    html = html.replace(/^## (.*)$/gim, '<h2>$1</h2>');
-    html = html.replace(/^# (.*)$/gim, '<h1>$1</h1>');
-    
-    // 转义 HTML（标题已经处理，不会被转义）
-    html = this.escapeHtml(html);
-    
-    // 恢复代码块
-    codeBlocks.forEach((codeBlock, index) => {
-      html = html.replace(`__CODE_BLOCK_${index}__`, codeBlock);
-    });
-    
-    // 恢复行内代码
-    inlineCodes.forEach((inlineCode, index) => {
-      html = html.replace(`__INLINE_CODE_${index}__`, inlineCode);
-    });
-    
-    // 恢复标题（因为 escapeHtml 会转义它们）
-    html = html.replace(/&lt;h([1-6])&gt;(.*?)&lt;\/h([1-6])&gt;/g, '<h$1>$2</h$3>');
-    
-    // 粗体
-    html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-    html = html.replace(/__([^_]+)__/g, '<strong>$1</strong>');
-    
-    // 斜体
-    html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>');
-    html = html.replace(/_([^_]+)_/g, '<em>$1</em>');
-    
-    // 链接
-    html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
-    
-    // 列表（无序）
-    html = html.replace(/^\* (.*)$/gim, '<li>$1</li>');
-    html = html.replace(/^- (.*)$/gim, '<li>$1</li>');
-    html = html.replace(/^\+ (.*)$/gim, '<li>$1</li>');
-    
-    // 有序列表
-    html = html.replace(/^\d+\. (.*)$/gim, '<li>$1</li>');
-    
-    // 引用
-    html = html.replace(/^&gt; (.*)$/gim, '<blockquote>$1</blockquote>');
-    
-    // 分隔线
-    html = html.replace(/^---$/gim, '<hr>');
-    html = html.replace(/^\*\*\*$/gim, '<hr>');
-    
-    // 将连续的 li 包裹在 ul 或 ol 中
-    html = html.replace(/(<li>.*?<\/li>(?:\n|$))+/g, (match) => {
-      // 检查是否是有序列表（包含数字）
-      const isOrdered = /^\d+\./.test(match);
-      const tag = isOrdered ? 'ol' : 'ul';
-      return `<${tag}>${match}</${tag}>`;
-    });
-    
-    // 段落处理：将连续的非标签行包裹在 <p> 中
-    const lines = html.split('\n');
-    const processedLines: string[] = [];
-    let currentParagraph: string[] = [];
-    
-    for (const line of lines) {
-      const trimmed = line.trim();
-      // 如果是空行，结束当前段落
-      if (trimmed === '') {
-        if (currentParagraph.length > 0) {
-          processedLines.push(`<p>${currentParagraph.join(' ')}</p>`);
-          currentParagraph = [];
-        }
-        continue;
-      }
-      // 如果已经是 HTML 标签（标题、列表、代码块等），结束当前段落并添加该行
-      if (trimmed.match(/^<(h[1-6]|ul|ol|li|pre|code|blockquote|hr|p)/)) {
-        if (currentParagraph.length > 0) {
-          processedLines.push(`<p>${currentParagraph.join(' ')}</p>`);
-          currentParagraph = [];
-        }
-        processedLines.push(line);
-      } else {
-        // 普通文本，添加到当前段落
-        currentParagraph.push(trimmed);
-      }
-    }
-    
-    // 处理剩余的段落
-    if (currentParagraph.length > 0) {
-      processedLines.push(`<p>${currentParagraph.join(' ')}</p>`);
-    }
-    
-    html = processedLines.join('\n');
-    
-    return html;
-  }
 
   private scrollToBottom() {
     this.messagesContainer.scrollTop = this.messagesContainer.scrollHeight;
@@ -945,50 +630,19 @@ export class ChatPanel {
 
   private async loadHistoryList() {
     const history = await this.storage.getHistory();
-    if (history.length === 0) {
-      this.historyPanel.innerHTML = `<div style="padding: 20px; text-align: center; color: var(--b3-theme-on-background); opacity: 0.6;">${this.plugin.i18n.noHistory}</div>`;
-      return;
-    }
-
-    this.historyPanel.innerHTML = history.map((item, index) => `
-      <div class="gleam-history-item" data-id="${item.id}">
-        <div class="gleam-history-item-number">${index + 1}</div>
-        <div class="gleam-history-item-content">
-          <div class="gleam-history-item-title">${this.escapeHtml(item.title)}</div>
-          <div class="gleam-history-item-time">${new Date(item.timestamp).toLocaleString()}</div>
-        </div>
-        <button class="gleam-history-favorite ${item.isFavorite ? 'active' : ''}" 
-                data-id="${item.id}" 
-                title="${item.isFavorite ? '取消收藏' : '收藏'}">
-          ${item.isFavorite ? '⭐' : '☆'}
-        </button>
-      </div>
-    `).join('');
-
-    this.historyPanel.querySelectorAll('.gleam-history-item').forEach(item => {
-      const id = item.getAttribute('data-id');
-      if (!id) return;
-      
-      // 点击历史项加载对话
-      item.addEventListener('click', async (e) => {
-        // 如果点击的是收藏按钮，不加载对话
-        if ((e.target as HTMLElement).closest('.gleam-history-favorite')) {
-          return;
-        }
+    HistoryManager.renderHistoryList(
+      history,
+      this.historyPanel,
+      this.plugin.i18n,
+      async (id: string) => {
         await this.loadChatFromHistory(id);
         this.historyPanel.classList.remove('show');
-      });
-      
-      // 收藏按钮点击事件
-      const favoriteBtn = item.querySelector('.gleam-history-favorite') as HTMLButtonElement;
-      if (favoriteBtn) {
-        favoriteBtn.addEventListener('click', async (e) => {
-          e.stopPropagation();
-          await this.toggleFavorite(id);
-          this.loadHistoryList(); // 重新加载历史列表以更新UI
-        });
+      },
+      async (id: string) => {
+        await this.toggleFavorite(id);
+        this.loadHistoryList(); // 重新加载历史列表以更新UI
       }
-    });
+    );
   }
 
   private async loadChatFromHistory(id: string) {
@@ -998,11 +652,7 @@ export class ChatPanel {
 
     this.currentMessages = [...item.messages];
     // 检查是否已有 system 消息（表示已注入上下文）
-    if (this.currentMessages.length > 0 && this.currentMessages[0].role === 'system') {
-      this.hasContextInjected = true;
-    } else {
-      this.hasContextInjected = false;
-    }
+    this.hasContextInjected = HistoryManager.hasContextInjected(this.currentMessages);
     this.messagesContainer.innerHTML = '';
     for (const msg of item.messages) {
       if (msg.role !== 'system') {

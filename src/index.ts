@@ -1,6 +1,5 @@
 import {
-    Plugin,
-    Setting
+    Plugin
 } from "siyuan";
 import './index.scss';
 import { ChatPanel } from './ui/chatPanel';
@@ -8,16 +7,18 @@ import { DataStorage } from './storage/data';
 import { Logger } from './utils/logger';
 import { OpenRouterProvider } from './api/openrouter';
 import { AIProvider } from './api/base';
+import { SettingsManager } from './settings/index';
 
  
 
 export default class PluginGleam extends Plugin {
     private chatPanel: ChatPanel | null = null;
     private dockElement: HTMLElement | null = null;
-    public setting: Setting;
+    public setting: any;
     private storage: DataStorage;
     public i18n: any;
     private providers: Map<string, AIProvider>;
+    private settingsManager: SettingsManager | null = null;
 
 
     onload() {
@@ -33,11 +34,9 @@ export default class PluginGleam extends Plugin {
     }
 
     private initSetting() {
-        this.setting = new Setting({
-            confirmCallback: async () => {
-                await this.saveSettings();
-            }
-        });
+        this.settingsManager = new SettingsManager(this, this.storage, this.providers);
+        this.settingsManager.init();
+        this.setting = this.settingsManager.getSetting();
 
         // OpenRouter API Key
         this.setting.addItem({
