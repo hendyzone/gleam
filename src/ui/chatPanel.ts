@@ -25,6 +25,7 @@ export class ChatPanel {
   private providers: Map<string, AIProvider>;
   private currentMessages: ChatMessage[] = [];
   private isLoading = false;
+  private hasContextInjected = false; // 标记是否已经注入过上下文
 
   constructor(plugin: any, element: HTMLElement) {
     this.plugin = plugin;
@@ -198,7 +199,7 @@ export class ChatPanel {
     try {
       let messages: ChatMessage[] = [...this.currentMessages, { role: 'user', content: message }];
 
-      if (config.enableContext) {
+      if (config.enableContext && !this.hasContextInjected) {
         Logger.log('[ChatPanel] 上下文注入已启用，开始获取文档内容');
         const documentContent = await this.contextInjector.getCurrentDocumentContent();
         if (documentContent) {
@@ -207,11 +208,14 @@ export class ChatPanel {
             { role: 'system', content: contextPrompt },
             ...messages
           ];
+          this.hasContextInjected = true; // 标记已注入上下文
           Logger.log('[ChatPanel] 上下文注入成功，消息数量:', messages.length);
           Logger.log('[ChatPanel] 消息结构:', messages.map(m => ({ role: m.role, contentLength: m.content.length })));
         } else {
           Logger.warn('[ChatPanel] 上下文注入已启用但未获取到文档内容');
         }
+      } else if (config.enableContext && this.hasContextInjected) {
+        Logger.log('[ChatPanel] 上下文已在本次对话中注入过，跳过重复注入');
       } else {
         Logger.log('[ChatPanel] 上下文注入未启用');
       }
@@ -356,6 +360,12 @@ export class ChatPanel {
     if (!item) return;
 
     this.currentMessages = [...item.messages];
+    // 检查是否已有 system 消息（表示已注入上下文）
+    if (this.currentMessages.length > 0 && this.currentMessages[0].role === 'system') {
+      this.hasContextInjected = true;
+    } else {
+      this.hasContextInjected = false;
+    }
     this.messagesContainer.innerHTML = '';
     item.messages.forEach(msg => {
       if (msg.role !== 'system') {
