@@ -27,6 +27,7 @@
   "networkError": "Network error",
   "apiError": "API error",
   "unknownError": "Unknown error",
-  "contextInjectionDesc": "Inject current document content as context into AI requests"
+  "contextInjectionDesc": "Inject current document content as context into AI requests",
+  "removeSpace": "Remove Space"
 }
 

@@ -27,6 +27,8 @@
   "networkError": "网络错误",
   "apiError": "API错误",
   "unknownError": "未知错误",
-  "contextInjectionDesc": "将当前文档内容作为上下文注入到AI请求中"
+  "contextInjectionDesc": "将当前文档内容作为上下文注入到AI请求中",
+  "removeSpace": "移除空格"
+  
 }
 

@@ -16,6 +16,7 @@ export class ChatPanel {
   private contextToggle!: HTMLInputElement;
   private settingsButton!: HTMLButtonElement;
   private historyButton!: HTMLButtonElement;
+  private newChatButton!: HTMLButtonElement;
   private historyPanel!: HTMLElement;
   private settingsPanel!: HTMLElement;
 
@@ -63,6 +64,7 @@ export class ChatPanel {
               <span>${this.plugin.i18n.contextInjection}</span>
             </label>
           </div>
+          <button class="gleam-button" id="gleam-new-chat-button">${this.plugin.i18n.newChat || '新建对话'}</button>
           <button class="gleam-button" id="gleam-history-button">${this.plugin.i18n.history}</button>
           <button class="gleam-button" id="gleam-settings-button">${this.plugin.i18n.settings}</button>
         </div>
@@ -86,6 +88,7 @@ export class ChatPanel {
     this.contextToggle = this.element.querySelector('#gleam-context-toggle') as HTMLInputElement;
     this.settingsButton = this.element.querySelector('#gleam-settings-button') as HTMLButtonElement;
     this.historyButton = this.element.querySelector('#gleam-history-button') as HTMLButtonElement;
+    this.newChatButton = this.element.querySelector('#gleam-new-chat-button') as HTMLButtonElement;
     this.historyPanel = this.element.querySelector('#gleam-history-panel')!;
     this.settingsPanel = document.createElement('div');
     this.settingsPanel.className = 'gleam-settings-panel';
@@ -158,6 +161,7 @@ export class ChatPanel {
     this.contextToggle.addEventListener('change', () => this.saveConfig());
     this.settingsButton.addEventListener('click', () => this.showSettings());
     this.historyButton.addEventListener('click', () => this.toggleHistory());
+    this.newChatButton.addEventListener('click', () => this.newChat());
   }
 
   private async handleSend() {
