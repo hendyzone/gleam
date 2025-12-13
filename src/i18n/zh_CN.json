@@ -31,9 +31,6 @@
   "removeSpace": "移除空格",
   "insertDocument": "插入文档",
   "insertDocumentTooltip": "将当前文档内容插入到输入框",
-  "insertDocumentError": "未找到文档内容，请确保当前有打开的文档",
-  "testPanel": "文档工具测试",
-  "testTools": "测试工具",
-  "openTestPanel": "打开测试面板"
+  "insertDocumentError": "未找到文档内容，请确保当前有打开的文档"
 }
 

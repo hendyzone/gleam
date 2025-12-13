@@ -16,11 +16,9 @@ export class ChatPanel {
   private providerSelect!: HTMLSelectElement;
   private modelSelect!: HTMLSelectElement;
   private contextToggle!: HTMLInputElement;
-  private settingsButton!: HTMLButtonElement;
   private historyButton!: HTMLButtonElement;
   private newChatButton!: HTMLButtonElement;
   private historyPanel!: HTMLElement;
-  private settingsPanel!: HTMLElement;
 
   private plugin: any;
   private storage: DataStorage;
@@ -68,7 +66,6 @@ export class ChatPanel {
           </div>
           <button class="gleam-button" id="gleam-new-chat-button">${this.plugin.i18n.newChat || '新建对话'}</button>
           <button class="gleam-button" id="gleam-history-button">${this.plugin.i18n.history}</button>
-          <button class="gleam-button" id="gleam-settings-button">${this.plugin.i18n.settings}</button>
         </div>
         <div class="gleam-messages" id="gleam-messages"></div>
         <div class="gleam-history-panel" id="gleam-history-panel"></div>
@@ -90,13 +87,9 @@ export class ChatPanel {
     this.providerSelect = this.element.querySelector('#gleam-provider-select') as HTMLSelectElement;
     this.modelSelect = this.element.querySelector('#gleam-model-select') as HTMLSelectElement;
     this.contextToggle = this.element.querySelector('#gleam-context-toggle') as HTMLInputElement;
-    this.settingsButton = this.element.querySelector('#gleam-settings-button') as HTMLButtonElement;
     this.historyButton = this.element.querySelector('#gleam-history-button') as HTMLButtonElement;
     this.newChatButton = this.element.querySelector('#gleam-new-chat-button') as HTMLButtonElement;
     this.historyPanel = this.element.querySelector('#gleam-history-panel')!;
-    this.settingsPanel = document.createElement('div');
-    this.settingsPanel.className = 'gleam-settings-panel';
-    document.body.appendChild(this.settingsPanel);
   }
 
   private async loadConfig() {
@@ -164,7 +157,6 @@ export class ChatPanel {
 
     this.modelSelect.addEventListener('change', () => this.saveConfig());
     this.contextToggle.addEventListener('change', () => this.saveConfig());
-    this.settingsButton.addEventListener('click', () => this.showSettings());
     this.historyButton.addEventListener('click', () => this.toggleHistory());
     this.newChatButton.addEventListener('click', () => this.newChat());
   }
@@ -349,12 +341,6 @@ export class ChatPanel {
     };
 
     await this.storage.addHistoryItem(historyItem);
-  }
-
-  private showSettings() {
-    if ((window as any).gleamSettingsPanel) {
-      (window as any).gleamSettingsPanel.show();
-    }
   }
 
   private toggleHistory() {

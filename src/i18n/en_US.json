@@ -31,9 +31,6 @@
   "removeSpace": "Remove Space",
   "insertDocument": "Insert Document",
   "insertDocumentTooltip": "Insert current document content into input",
-  "insertDocumentError": "Document content not found, please ensure a document is open",
-  "testPanel": "Document Helper Test",
-  "testTools": "Test Tools",
-  "openTestPanel": "Open Test Panel"
+  "insertDocumentError": "Document content not found, please ensure a document is open"
 }
 
