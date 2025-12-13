@@ -45,3 +45,12 @@ export interface AIResponse {
   done: boolean;
 }
 
+export interface ModelInfo {
+  id: string;
+  name: string;
+  inputModalities: string[]; // 输入模态: text, image, file, audio, video
+  outputModalities: string[]; // 输出模态: text, image, embeddings
+  description?: string;
+  contextLength?: number;
+}
+

@@ -1,9 +1,10 @@
-import { Provider, AIRequestOptions, AIResponse } from '../utils/types';
+import { Provider, AIRequestOptions, AIResponse, ModelInfo } from '../utils/types';
 
 export interface AIProvider {
   name: Provider;
   chat(options: AIRequestOptions & { apiKey?: string }, onChunk?: (chunk: string) => void): Promise<AIResponse>;
   getModels(apiKey: string): Promise<string[]>;
+  getModelsWithInfo(apiKey: string): Promise<ModelInfo[]>;
 }
 
 export abstract class BaseAIProvider implements AIProvider {
@@ -30,5 +31,6 @@ export abstract class BaseAIProvider implements AIProvider {
 
   abstract chat(options: AIRequestOptions, onChunk?: (chunk: string) => void): Promise<AIResponse>;
   abstract getModels(apiKey: string): Promise<string[]>;
+  abstract getModelsWithInfo(apiKey: string): Promise<ModelInfo[]>;
 }
 

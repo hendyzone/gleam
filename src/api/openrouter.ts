@@ -1,5 +1,5 @@
 import { BaseAIProvider } from './base';
-import { Provider, AIRequestOptions, AIResponse } from '../utils/types';
+import { Provider, AIRequestOptions, AIResponse, ModelInfo } from '../utils/types';
 import { Logger } from '../utils/logger';
 
 export class OpenRouterProvider extends BaseAIProvider {
@@ -92,13 +92,8 @@ export class OpenRouterProvider extends BaseAIProvider {
 
   async getModels(apiKey: string): Promise<string[]> {
     try {
-      const url = `${this.baseURL}/models`;
-      const response = await this.fetchWithAuth(url, {
-        method: 'GET'
-      }, apiKey);
-
-      const data = await response.json();
-      return data.data?.map((model: any) => model.id) || [];
+      const models = await this.getModelsWithInfo(apiKey);
+      return models.map(m => m.id);
     } catch (error) {
       Logger.error('Failed to fetch OpenRouter models:', error);
       return [
@@ -108,6 +103,28 @@ export class OpenRouterProvider extends BaseAIProvider {
         'anthropic/claude-3-sonnet',
         'google/gemini-pro'
       ];
+    }
+  }
+
+  async getModelsWithInfo(apiKey: string): Promise<ModelInfo[]> {
+    try {
+      const url = `${this.baseURL}/models`;
+      const response = await this.fetchWithAuth(url, {
+        method: 'GET'
+      }, apiKey);
+
+      const data = await response.json();
+      return (data.data || []).map((model: any) => ({
+        id: model.id,
+        name: model.name || model.id,
+        inputModalities: model.architecture?.input_modalities || ['text'],
+        outputModalities: model.architecture?.output_modalities || ['text'],
+        description: model.description || '',
+        contextLength: model.context_length || null
+      }));
+    } catch (error) {
+      Logger.error('Failed to fetch OpenRouter models with info:', error);
+      return [];
     }
   }
 }

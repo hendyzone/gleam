@@ -167,9 +167,61 @@
     }
     
     &.selected {
-      background: var(--b3-theme-primary);
-      color: var(--b3-theme-on-primary);
+      background: rgba(33, 150, 243, 0.1);
+      border-left: 3px solid var(--b3-theme-primary);
+      color: var(--b3-theme-on-background);
     }
+    
+    &-name {
+      font-weight: 500;
+      margin-bottom: 4px;
+      color: var(--b3-theme-on-background);
+      
+      .gleam-model-dialog-item.selected & {
+        color: var(--b3-theme-on-background);
+        font-weight: 600;
+      }
+    }
+    
+    &-id {
+      font-size: 12px;
+      opacity: 0.7;
+      margin-bottom: 8px;
+      font-family: monospace;
+      color: var(--b3-theme-on-background);
+      
+      .gleam-model-dialog-item.selected & {
+        opacity: 0.8;
+        color: var(--b3-theme-on-background);
+      }
+    }
+    
+    &-modalities {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 8px;
+    }
+  }
+}
+
+.gleam-modality-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 500;
+  
+  &.input {
+    background: rgba(33, 150, 243, 0.1);
+    color: #2196f3;
+    border: 1px solid rgba(33, 150, 243, 0.3);
+  }
+  
+  &.output {
+    background: rgba(76, 175, 80, 0.1);
+    color: #4caf50;
+    border: 1px solid rgba(76, 175, 80, 0.3);
   }
 }
 

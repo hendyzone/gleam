@@ -202,7 +202,16 @@ export default class PluginGleam extends Plugin {
                     return;
                 }
 
-                const models = await aiProvider.getModels(providerConfig.apiKey);
+                // 尝试获取模型详细信息
+                let models: string[] = [];
+                if (typeof (aiProvider as any).getModelsWithInfo === 'function') {
+                    const modelsInfo = await (aiProvider as any).getModelsWithInfo(providerConfig.apiKey);
+                    models = modelsInfo.map((m: any) => m.id);
+                    // 存储详细信息用于显示（如果需要）
+                } else {
+                    models = await aiProvider.getModels(providerConfig.apiKey);
+                }
+                
                 allModelsForSettings = models;
                 modelSelect.innerHTML = '<option value="">请选择模型</option>';
                 models.forEach(model => {

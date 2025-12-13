@@ -1,4 +1,4 @@
-import { ChatMessage } from '../utils/types';
+import { ChatMessage, ModelInfo } from '../utils/types';
 import { DataStorage } from '../storage/data';
 import { ContextInjector } from '../features/context-injection';
 import { OpenRouterProvider } from '../api/openrouter';
@@ -14,7 +14,8 @@ export class ChatPanel {
   private sendButton!: HTMLButtonElement;
   private modelSelect!: HTMLSelectElement;
   private modelButton!: HTMLButtonElement; // 模型选择按钮
-  private allModels: string[] = []; // 存储所有模型列表
+  private allModels: string[] = []; // 存储所有模型ID列表（用于兼容）
+  private allModelsInfo: ModelInfo[] = []; // 存储所有模型详细信息
   private modelDialog!: HTMLElement; // 模型选择对话框
   private contextToggle!: HTMLInputElement;
   private historyButton!: HTMLButtonElement;
@@ -108,9 +109,19 @@ export class ChatPanel {
     const config = await this.storage.getConfig();
     const providerConfig = config.openrouter;
     
-    if (!providerConfig.apiKey) {
+    // 检查 API key，优先从 config 中获取，如果没有则尝试从 plugin.data 中获取
+    let apiKey = providerConfig.apiKey;
+    if (!apiKey && (this.plugin as any).data?.openrouterApiKey) {
+      apiKey = (this.plugin as any).data.openrouterApiKey;
+      // 同步到 config
+      providerConfig.apiKey = apiKey;
+      await this.storage.saveConfig(config);
+    }
+    
+    if (!apiKey || apiKey.trim() === '') {
       this.modelSelect.innerHTML = `<option value="">${this.plugin.i18n.apiKeyRequired}</option>`;
       this.allModels = [];
+      this.allModelsInfo = [];
       this.updateModelButtonText('');
       return;
     }
@@ -119,14 +130,32 @@ export class ChatPanel {
     if (!aiProvider) return;
 
     try {
-      const models = await aiProvider.getModels(providerConfig.apiKey);
-      this.allModels = models;
-      this.modelSelect.innerHTML = models.map(model => 
+      // 优先使用 getModelsWithInfo 获取详细信息
+      if (typeof (aiProvider as any).getModelsWithInfo === 'function') {
+        this.allModelsInfo = await (aiProvider as any).getModelsWithInfo(apiKey);
+        this.allModels = this.allModelsInfo.map(m => m.id);
+        Logger.log(`Loaded ${this.allModelsInfo.length} models with info`);
+      } else {
+        // 降级方案：只获取模型ID
+        this.allModels = await aiProvider.getModels(apiKey);
+        this.allModelsInfo = this.allModels.map(id => ({
+          id,
+          name: id,
+          inputModalities: ['text'],
+          outputModalities: ['text']
+        }));
+        Logger.log(`Loaded ${this.allModels.length} models (fallback)`);
+      }
+      
+      this.modelSelect.innerHTML = this.allModels.map(model => 
         `<option value="${model}">${model}</option>`
       ).join('');
-    } catch (error) {
+    } catch (error: any) {
       Logger.error('Failed to load models:', error);
+      const errorMsg = error?.message || '加载模型失败';
+      this.showError(errorMsg);
       this.allModels = [];
+      this.allModelsInfo = [];
       this.updateModelButtonText('');
     }
   }
@@ -175,10 +204,28 @@ export class ChatPanel {
   /**
    * 显示模型选择对话框
    */
-  private showModelDialog() {
-    if (this.allModels.length === 0) {
-      this.showError(this.plugin.i18n.apiKeyRequired || '请先配置API密钥');
-      return;
+  private async showModelDialog() {
+    // 如果模型信息为空，尝试重新加载
+    if (this.allModelsInfo.length === 0 && this.allModels.length === 0) {
+      try {
+        await this.loadModels('openrouter');
+        // 检查是否是因为 API key 未配置
+        const config = await this.storage.getConfig();
+        const apiKey = config.openrouter?.apiKey || (this.plugin as any).data?.openrouterApiKey;
+        if (!apiKey || apiKey.trim() === '') {
+          this.showError(this.plugin.i18n.apiKeyRequired || '请先配置API密钥');
+          return;
+        }
+        // 如果加载后仍然为空，可能是加载失败
+        if (this.allModelsInfo.length === 0 && this.allModels.length === 0) {
+          this.showError('加载模型失败，请检查API密钥是否正确');
+          return;
+        }
+      } catch (error: any) {
+        Logger.error('Failed to load models in dialog:', error);
+        this.showError(error?.message || '加载模型失败');
+        return;
+      }
     }
     
     const listContainer = this.modelDialog.querySelector('.gleam-model-dialog-list') as HTMLElement;
@@ -200,18 +247,46 @@ export class ChatPanel {
    * 渲染模型对话框列表
    */
   private renderModelDialogList(keyword: string, container: HTMLElement) {
-    let models = this.allModels;
+    let modelsInfo = this.allModelsInfo;
     
     if (keyword) {
-      models = this.allModels.filter(model => 
-        model.toLowerCase().includes(keyword)
+      const lowerKeyword = keyword.toLowerCase();
+      modelsInfo = this.allModelsInfo.filter(model => 
+        model.id.toLowerCase().includes(lowerKeyword) ||
+        model.name.toLowerCase().includes(lowerKeyword)
       );
     }
     
     const currentValue = this.modelSelect.value;
-    container.innerHTML = models.map(model => {
-      const isSelected = model === currentValue;
-      return `<div class="gleam-model-dialog-item ${isSelected ? 'selected' : ''}" data-value="${this.escapeHtml(model)}">${this.escapeHtml(model)}</div>`;
+    
+    // 模态标签映射
+    const modalityLabels: Record<string, string> = {
+      text: '文本',
+      image: '图片',
+      file: '文件',
+      audio: '音频',
+      video: '视频',
+      embeddings: '嵌入'
+    };
+    
+    if (modelsInfo.length === 0) {
+      container.innerHTML = `<div style="padding: 20px; text-align: center; opacity: 0.7; color: var(--b3-theme-on-background);">${this.plugin.i18n.noModelsFound || '未找到模型'}</div>`;
+      return;
+    }
+    
+    container.innerHTML = modelsInfo.map(model => {
+      const isSelected = model.id === currentValue;
+      const inputMods = (model.inputModalities || ['text']).map(m => modalityLabels[m] || m).join(', ');
+      const outputMods = (model.outputModalities || ['text']).map(m => modalityLabels[m] || m).join(', ');
+      
+      return `<div class="gleam-model-dialog-item ${isSelected ? 'selected' : ''}" data-value="${this.escapeHtml(model.id)}">
+        <div class="gleam-model-dialog-item-name">${this.escapeHtml(model.name || model.id)}</div>
+        <div class="gleam-model-dialog-item-id">${this.escapeHtml(model.id)}</div>
+        <div class="gleam-model-dialog-item-modalities">
+          <span class="gleam-modality-badge input">输入: ${this.escapeHtml(inputMods)}</span>
+          <span class="gleam-modality-badge output">输出: ${this.escapeHtml(outputMods)}</span>
+        </div>
+      </div>`;
     }).join('');
     
     // 添加点击事件
@@ -294,7 +369,16 @@ export class ChatPanel {
     const config = await this.storage.getConfig();
     const providerConfig = config.openrouter;
 
-    if (!providerConfig.apiKey) {
+    // 检查 API key，优先从 config 中获取，如果没有则尝试从 plugin.data 中获取
+    let apiKey = providerConfig.apiKey;
+    if (!apiKey && (this.plugin as any).data?.openrouterApiKey) {
+      apiKey = (this.plugin as any).data.openrouterApiKey;
+      // 同步到 config
+      providerConfig.apiKey = apiKey;
+      await this.storage.saveConfig(config);
+    }
+
+    if (!apiKey || apiKey.trim() === '') {
       this.showError(this.plugin.i18n.apiKeyRequired);
       return;
     }
@@ -350,7 +434,7 @@ export class ChatPanel {
         model: config.currentModel,
         stream: true,
         temperature: 0.7,
-        apiKey: providerConfig.apiKey
+        apiKey: apiKey
       };
 
       await aiProvider.chat(
