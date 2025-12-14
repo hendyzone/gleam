@@ -401,6 +401,7 @@
 
   // 图片样式
   .gleam-message-image {
+    position: relative;
     margin: 8px 0;
     border-radius: 8px;
     overflow: hidden;
@@ -418,16 +419,59 @@
         transform: scale(1.02);
       }
     }
+
+    .gleam-image-actions {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      display: flex;
+      gap: 4px;
+      opacity: 0;
+      transition: opacity 0.2s;
+      z-index: 10;
+    }
+
+    &:hover .gleam-image-actions {
+      opacity: 1;
+    }
+
+    .gleam-image-action-btn {
+      background: rgba(0, 0, 0, 0.6);
+      border: none;
+      border-radius: 4px;
+      color: white;
+      cursor: pointer;
+      padding: 4px 8px;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 28px;
+      min-height: 28px;
+      transition: background 0.2s;
+
+      &:hover {
+        background: rgba(0, 0, 0, 0.8);
+      }
+
+      &:active {
+        background: rgba(0, 0, 0, 0.9);
+      }
+    }
   }
 
   // 音频样式
   .gleam-message-audio {
     margin: 8px 0;
     max-width: 100%;
+    position: relative;
+    z-index: 1;
     
     audio {
       max-width: 100%;
       height: 32px;
+      position: relative;
+      z-index: 1;
     }
   }
   
@@ -553,9 +597,9 @@
 }
 
 .gleam-copy-button {
-  position: absolute;
-  bottom: 8px;
-  right: 8px;
+  position: absolute !important;
+  bottom: 8px !important;
+  right: 8px !important;
   background: rgba(0, 0, 0, 0.1);
   border: none;
   border-radius: 4px;
@@ -564,12 +608,13 @@
   font-size: 14px;
   opacity: 0;
   transition: opacity 0.2s, background 0.2s;
-  z-index: 100;
-  display: flex;
+  z-index: 1000 !important;
+  display: flex !important;
   align-items: center;
   justify-content: center;
   min-width: 28px;
   min-height: 28px;
+  pointer-events: auto;
 
   &:hover {
     background: rgba(0, 0, 0, 0.2);
@@ -581,7 +626,7 @@
 }
 
 .gleam-message-assistant .gleam-message-content:hover .gleam-copy-button {
-  opacity: 1;
+  opacity: 1 !important;
 }
 
 .gleam-message-footer {
@@ -1008,5 +1053,69 @@
   border-radius: 4px;
   font-size: 12px;
   margin: 8px 0;
+}
+
+// 图片查看器样式
+.gleam-image-zoom-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.gleam-image-zoom-backdrop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.9);
+  cursor: pointer;
+}
+
+.gleam-image-zoom-content {
+  position: relative;
+  max-width: 90vw;
+  max-height: 90vh;
+  z-index: 10001;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.gleam-image-zoom-close {
+  position: absolute;
+  top: -40px;
+  right: 0;
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  font-size: 32px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+  z-index: 10002;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.3);
+  }
+}
+
+.gleam-image-zoom-image {
+  max-width: 90vw;
+  max-height: 90vh;
+  object-fit: contain;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
 }
 

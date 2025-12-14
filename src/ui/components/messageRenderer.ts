@@ -17,8 +17,16 @@ export class MessageRenderer {
     
     // 如果有图片，先渲染图片
     if (images && images.length > 0) {
-      images.forEach(imageUrl => {
-        html += `<div class="gleam-message-image"><img src="${this.escapeHtml(imageUrl)}" alt="Generated image" loading="lazy"></div>`;
+      images.forEach((imageUrl, index) => {
+        html += `
+          <div class="gleam-message-image">
+            <img src="${this.escapeHtml(imageUrl)}" alt="Generated image" loading="lazy" data-image-url="${this.escapeHtml(imageUrl)}">
+            <div class="gleam-image-actions">
+              <button class="gleam-image-action-btn" data-action="zoom" data-image-url="${this.escapeHtml(imageUrl)}" title="放大">🔍</button>
+              <button class="gleam-image-action-btn" data-action="copy" data-image-url="${this.escapeHtml(imageUrl)}" title="复制">📋</button>
+            </div>
+          </div>
+        `;
       });
     }
     

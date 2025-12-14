@@ -684,6 +684,22 @@ export class ChatPanel {
       }
     }
 
+    // 为图片操作按钮添加事件监听
+    const imageActionBtns = messageElement.querySelectorAll('.gleam-image-action-btn');
+    imageActionBtns.forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const action = (btn as HTMLElement).getAttribute('data-action');
+        const imageUrl = (btn as HTMLElement).getAttribute('data-image-url') || '';
+        
+        if (action === 'zoom') {
+          this.showImageZoom(imageUrl);
+        } else if (action === 'copy') {
+          await this.copyImageToClipboard(imageUrl);
+        }
+      });
+    });
+
     this.messagesContainer.appendChild(messageElement);
     this.scrollToBottom();
     return messageId;
@@ -747,6 +763,86 @@ export class ChatPanel {
     } catch (error) {
       Logger.error('[ChatPanel] 复制失败:', error);
       this.showError('复制失败，请手动复制');
+    }
+  }
+
+  /**
+   * 显示图片放大查看器
+   */
+  private showImageZoom(imageUrl: string): void {
+    // 创建图片查看器
+    const zoomContainer = document.createElement('div');
+    zoomContainer.className = 'gleam-image-zoom-container';
+    zoomContainer.innerHTML = `
+      <div class="gleam-image-zoom-backdrop"></div>
+      <div class="gleam-image-zoom-content">
+        <button class="gleam-image-zoom-close">&times;</button>
+        <img src="${this.escapeHtml(imageUrl)}" alt="Zoomed image" class="gleam-image-zoom-image">
+      </div>
+    `;
+
+    document.body.appendChild(zoomContainer);
+    
+    // 关闭按钮事件
+    const closeBtn = zoomContainer.querySelector('.gleam-image-zoom-close') as HTMLButtonElement;
+    const backdrop = zoomContainer.querySelector('.gleam-image-zoom-backdrop') as HTMLElement;
+    
+    const closeZoom = () => {
+      zoomContainer.remove();
+    };
+    
+    closeBtn.addEventListener('click', closeZoom);
+    backdrop.addEventListener('click', closeZoom);
+    
+    // ESC 键关闭
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        closeZoom();
+        document.removeEventListener('keydown', handleKeyDown);
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+  }
+
+  /**
+   * 复制图片到剪贴板
+   */
+  private async copyImageToClipboard(imageUrl: string): Promise<void> {
+    try {
+      // 将图片 URL 转换为 Blob
+      const response = await fetch(imageUrl);
+      const blob = await response.blob();
+      
+      if (navigator.clipboard && navigator.clipboard.write) {
+        // 使用 Clipboard API
+        const item = new ClipboardItem({ [blob.type]: blob });
+        await navigator.clipboard.write([item]);
+        Logger.log('[ChatPanel] 图片已复制到剪贴板');
+      } else {
+        // 降级方案：创建临时图片元素并复制
+        const img = document.createElement('img');
+        img.src = imageUrl;
+        img.style.position = 'fixed';
+        img.style.left = '-999999px';
+        document.body.appendChild(img);
+        
+        // 使用 execCommand 复制（如果支持）
+        const range = document.createRange();
+        range.selectNode(img);
+        const selection = window.getSelection();
+        if (selection) {
+          selection.removeAllRanges();
+          selection.addRange(range);
+          document.execCommand('copy');
+          selection.removeAllRanges();
+        }
+        
+        document.body.removeChild(img);
+        Logger.log('[ChatPanel] 图片已复制到剪贴板（降级方案）');
+      }
+    } catch (error) {
+      Logger.error('[ChatPanel] 复制图片失败:', error);
+      this.showError('复制图片失败，请手动保存');
     }
   }
 
