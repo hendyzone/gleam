@@ -6,11 +6,22 @@ import { AIProvider } from '../api/base';
 import { Logger } from '../utils/logger';
 import { MarkdownRenderer } from './utils/markdown';
 import { MessageRenderer } from './components/messageRenderer';
-import { ImageHandler } from './components/imageHandler';
-import { AudioHandler } from './components/audioHandler';
-import { HistoryManager } from './components/historyManager';
 import { ModelDialog } from './components/modelDialog';
 import { ParametersPanel } from './components/parametersPanel';
+import { ConfigHandler } from './handlers/configHandler';
+import { AttachmentHandler } from './handlers/attachmentHandler';
+import { HistoryHandler } from './handlers/historyHandler';
+import { MessageSendHandler } from './handlers/messageSendHandler';
+import { RegenerateHandler } from './handlers/regenerateHandler';
+import { MessageHelper } from './components/messageHelper';
+import { ChatUtils } from './utils/chatUtils';
+import { UIBuilder } from './builders/uiBuilder';
+import { EventManager } from './managers/eventManager';
+import { ConfigManager } from './managers/configManager';
+import { StateManager } from './managers/stateManager';
+import { ParametersManager } from './managers/parametersManager';
+import { ChatManager } from './managers/chatManager';
+import { PanelInitializer } from './builders/panelInitializer';
 
 export class ChatPanel {
   private element: HTMLElement;
@@ -20,8 +31,6 @@ export class ChatPanel {
   private sendButton!: HTMLButtonElement;
   private modelSelect!: HTMLSelectElement;
   private modelButton!: HTMLButtonElement; // 模型选择按钮
-  private allModels: string[] = []; // 存储所有模型ID列表（用于兼容）
-  private allModelsInfo: ModelInfo[] = []; // 存储所有模型详细信息
   private modelDialog!: ModelDialog; // 模型选择对话框
   private parametersPanel!: ParametersPanel; // 参数配置面板
   private parametersButton!: HTMLButtonElement; // 参数配置按钮
@@ -31,16 +40,30 @@ export class ChatPanel {
   private historyPanel!: HTMLElement;
   private imageInput!: HTMLInputElement; // 文件选择输入框
   private imagePreviewContainer!: HTMLElement; // 附件预览容器
-  private selectedImages: string[] = []; // 已选择的图片（base64 或 URL）
-  private selectedAudio: Array<{ name: string; data: string; format: string }> = []; // 已选择的音频（包含文件名、base64数据和格式）
 
   private plugin: any;
   private storage: DataStorage;
   private contextInjector: ContextInjector;
   private providers: Map<string, AIProvider>;
   private currentMessages: ChatMessage[] = [];
-  private isLoading = false;
-  private hasContextInjected = false; // 标记是否已经注入过上下文
+  private isLoading = { value: false };
+  private hasContextInjected = { value: false }; // 标记是否已经注入过上下文
+  
+  // 处理器
+  private configHandler!: ConfigHandler;
+  private attachmentHandler!: AttachmentHandler;
+  private historyHandler!: HistoryHandler;
+  private messageSendHandler!: MessageSendHandler;
+  private regenerateHandler!: RegenerateHandler;
+  private eventManager!: EventManager;
+  private configManager!: ConfigManager;
+  private stateManager!: StateManager;
+  private parametersManager!: ParametersManager;
+  private chatManager!: ChatManager;
+  
+  // 模型相关（保留用于兼容）
+  private allModels: string[] = [];
+  private allModelsInfo: ModelInfo[] = [];
 
   constructor(plugin: any, element: HTMLElement) {
     this.plugin = plugin;
@@ -62,1271 +85,197 @@ export class ChatPanel {
   }
 
   private createUI() {
-    this.element.innerHTML = `
-      <div class="gleam-container">
-        <div class="gleam-messages" id="gleam-messages"></div>
-        <div class="gleam-history-panel" id="gleam-history-panel"></div>
-        <div class="gleam-input-area">
-          <div class="gleam-image-preview" id="gleam-image-preview"></div>
-          <div class="gleam-input-wrapper">
-            <input type="file" class="gleam-image-input" id="gleam-image-input" accept="image/*,audio/*" multiple style="display: none;">
-            <button class="gleam-image-button" id="gleam-image-button" title="添加文件">🧷</button>
-            <textarea class="gleam-textarea" id="gleam-textarea" placeholder="${this.plugin.i18n.inputPlaceholder}"></textarea>
-            <button class="gleam-send-button" id="gleam-send-button">${this.plugin.i18n.send}</button>
-          </div>
-          <div class="gleam-controls">
-            <button class="gleam-model-button" id="gleam-model-button">
-              <span id="gleam-model-button-text">${this.plugin.i18n.selectModel}</span>
-              <span class="gleam-model-button-arrow">▼</span>
-            </button>
-            <select class="gleam-select gleam-model-select-hidden" id="gleam-model-select">
-              <option value="">${this.plugin.i18n.selectModel}</option>
-            </select>
-            <label class="gleam-toggle">
-              <input type="checkbox" id="gleam-context-toggle">
-              <span>${this.plugin.i18n.contextInjection}</span>
-            </label>
-            <button class="gleam-button" id="gleam-parameters-button" title="模型参数">⚙️</button>
-            <button class="gleam-button" id="gleam-new-chat-button">${this.plugin.i18n.newChat || '新建对话'}</button>
-            <button class="gleam-button" id="gleam-history-button">${this.plugin.i18n.history}</button>
-          </div>
-        </div>
-      </div>
-    `;
-
-    this.messagesContainer = this.element.querySelector('#gleam-messages')!;
-    this.inputArea = this.element.querySelector('.gleam-input-area')!;
-    this.textarea = this.element.querySelector('#gleam-textarea') as HTMLTextAreaElement;
-    this.sendButton = this.element.querySelector('#gleam-send-button') as HTMLButtonElement;
-    this.modelSelect = this.element.querySelector('#gleam-model-select') as HTMLSelectElement;
-    this.modelButton = this.element.querySelector('#gleam-model-button') as HTMLButtonElement;
-    this.contextToggle = this.element.querySelector('#gleam-context-toggle') as HTMLInputElement;
-    this.historyButton = this.element.querySelector('#gleam-history-button') as HTMLButtonElement;
-    this.newChatButton = this.element.querySelector('#gleam-new-chat-button') as HTMLButtonElement;
-    this.parametersButton = this.element.querySelector('#gleam-parameters-button') as HTMLButtonElement;
-    this.historyPanel = this.element.querySelector('#gleam-history-panel')!;
-    this.imageInput = this.element.querySelector('#gleam-image-input') as HTMLInputElement;
-    this.imagePreviewContainer = this.element.querySelector('#gleam-image-preview')!;
+    this.element.innerHTML = UIBuilder.createUI(this.plugin);
     
-    // 创建模型选择对话框
-    this.modelDialog = new ModelDialog(
-      this.plugin.i18n,
+    // 初始化 UI 元素引用
+    const elements = UIBuilder.initializeElements(this.element);
+    this.messagesContainer = elements.messagesContainer;
+    this.inputArea = elements.inputArea;
+    this.textarea = elements.textarea;
+    this.sendButton = elements.sendButton;
+    this.modelSelect = elements.modelSelect;
+    this.modelButton = elements.modelButton;
+    this.contextToggle = elements.contextToggle;
+    this.historyButton = elements.historyButton;
+    this.newChatButton = elements.newChatButton;
+    this.parametersButton = elements.parametersButton;
+    this.historyPanel = elements.historyPanel;
+    this.imageInput = elements.imageInput;
+    this.imagePreviewContainer = elements.imagePreviewContainer;
+    
+    // 创建模型选择对话框和参数配置面板
+    this.modelDialog = UIBuilder.createModelDialog(
+      this.plugin,
       (modelId: string) => {
         this.modelSelect.value = modelId;
-        this.updateModelButtonText(modelId);
-        this.saveConfig();
+        // 延迟设置，因为 configManager 在后面初始化
+        if (this.configManager) {
+          this.configManager.updateModelButtonText(modelId);
+          this.configManager.saveConfig();
+        }
       }
     );
-
-    // 创建参数配置面板
-    this.parametersPanel = new ParametersPanel(
+    this.parametersPanel = UIBuilder.createParametersPanel(
       (parameters) => this.handleParametersSave(parameters),
       () => {}
     );
     
-    this.updateEmptyState();
+    // 初始化所有处理器和管理器
+    const handlers = PanelInitializer.initializeHandlers(
+      this.storage,
+      this.contextInjector,
+      this.providers,
+      this.plugin,
+      this.allModels,
+      this.allModelsInfo,
+      this.imagePreviewContainer,
+      this.historyPanel,
+      this.messagesContainer,
+      this.textarea,
+      this.sendButton,
+      this.modelSelect,
+      this.modelButton,
+      this.contextToggle,
+      this.currentMessages,
+      this.hasContextInjected,
+      this.isLoading,
+      this.modelDialog,
+      this.parametersPanel,
+      (msg) => {
+        // 延迟错误处理，因为 stateManager 在初始化中创建
+        if (this.stateManager) {
+          this.stateManager.showError(msg);
+        }
+      },
+      (role, content, images, audio) => this.addMessage(role, content, images, audio),
+      (id) => this.handleRegenerate(id)
+    );
+    
+    this.configHandler = handlers.configHandler;
+    this.attachmentHandler = handlers.attachmentHandler;
+    this.historyHandler = handlers.historyHandler;
+    this.messageSendHandler = handlers.messageSendHandler;
+    this.regenerateHandler = handlers.regenerateHandler;
+    this.configManager = handlers.configManager;
+    this.stateManager = handlers.stateManager;
+    this.parametersManager = handlers.parametersManager;
+    this.chatManager = handlers.chatManager;
+    
+    // 更新模型对话框引用
+    this.configManager.setModelDialog(this.modelDialog);
+    
+    this.stateManager.updateEmptyState(this.currentMessages);
   }
 
   private async loadConfig() {
-    const config = await this.storage.getConfig();
-    this.contextToggle.checked = config.enableContext;
-    await this.loadModels('openrouter');
-    if (config.currentModel) {
-      this.modelSelect.value = config.currentModel;
-      this.updateModelButtonText(config.currentModel);
-    }
+    await this.configManager.loadConfig();
   }
 
-  private async loadModels(provider: string) {
-    const config = await this.storage.getConfig();
-    const providerConfig = config.openrouter;
-    
-    // 检查 API key，优先从 config 中获取，如果没有则尝试从 plugin.data 中获取
-    let apiKey = providerConfig.apiKey;
-    if (!apiKey && (this.plugin as any).data?.openrouterApiKey) {
-      apiKey = (this.plugin as any).data.openrouterApiKey;
-      // 同步到 config
-      providerConfig.apiKey = apiKey;
-      await this.storage.saveConfig(config);
-    }
-    
-    if (!apiKey || apiKey.trim() === '') {
-      this.modelSelect.innerHTML = `<option value="">${this.plugin.i18n.apiKeyRequired}</option>`;
-      this.allModels = [];
-      this.allModelsInfo = [];
-      this.updateModelButtonText('');
-      return;
-    }
-
-    const aiProvider = this.providers.get(provider);
-    if (!aiProvider) return;
-
-    try {
-      // 优先使用 getModelsWithInfo 获取详细信息
-      if (typeof (aiProvider as any).getModelsWithInfo === 'function') {
-        this.allModelsInfo = await (aiProvider as any).getModelsWithInfo(apiKey);
-        this.allModels = this.allModelsInfo.map(m => m.id);
-        Logger.log(`Loaded ${this.allModelsInfo.length} models with info`);
-      } else {
-        // 降级方案：只获取模型ID
-        this.allModels = await aiProvider.getModels(apiKey);
-        this.allModelsInfo = this.allModels.map(id => ({
-          id,
-          name: id,
-          inputModalities: ['text'],
-          outputModalities: ['text']
-        }));
-        Logger.log(`Loaded ${this.allModels.length} models (fallback)`);
-      }
-      
-      this.modelSelect.innerHTML = this.allModels.map(model => 
-        `<option value="${model}">${model}</option>`
-      ).join('');
-    } catch (error: any) {
-      Logger.error('Failed to load models:', error);
-      const errorMsg = error?.message || '加载模型失败';
-      this.showError(errorMsg);
-      this.allModels = [];
-      this.allModelsInfo = [];
-      this.updateModelButtonText('');
-    }
-  }
-
-  /**
-   * 显示模型选择对话框
-   */
   private async showModelDialog() {
-    // 如果模型信息为空，尝试重新加载
-    if (this.allModelsInfo.length === 0 && this.allModels.length === 0) {
-      try {
-        await this.loadModels('openrouter');
-        // 检查是否是因为 API key 未配置
-        const config = await this.storage.getConfig();
-        const apiKey = config.openrouter?.apiKey || (this.plugin as any).data?.openrouterApiKey;
-        if (!apiKey || apiKey.trim() === '') {
-          this.showError(this.plugin.i18n.apiKeyRequired || '请先配置API密钥');
-          return;
-        }
-        // 如果加载后仍然为空，可能是加载失败
-        if (this.allModelsInfo.length === 0 && this.allModels.length === 0) {
-          this.showError('加载模型失败，请检查API密钥是否正确');
-          return;
-        }
-      } catch (error: any) {
-        Logger.error('Failed to load models in dialog:', error);
-        this.showError(error?.message || '加载模型失败');
-        return;
-      }
-    }
-    
-    this.modelDialog.show(this.allModelsInfo, this.modelSelect.value);
+    await this.configManager.showModelDialog();
   }
 
-
-  /**
-   * 更新模型按钮文本
-   */
   private updateModelButtonText(value: string) {
-    const buttonText = this.modelButton.querySelector('#gleam-model-button-text') as HTMLElement;
-    if (value) {
-      buttonText.textContent = value;
-    } else {
-      buttonText.textContent = this.plugin.i18n.selectModel || '选择模型';
-    }
+    this.configManager.updateModelButtonText(value);
   }
 
   private async loadHistory() {
-    const history = await this.storage.getHistory();
-    if (history.length === 0) {
+    const hasHistory = await this.historyHandler.hasHistory();
+    if (!hasHistory) {
       this.showNoMessages();
-      return;
     }
   }
 
   private showNoMessages() {
-    this.updateEmptyState();
-  }
-
-  private updateEmptyState() {
-    if (this.currentMessages.length === 0) {
-      this.messagesContainer.innerHTML = `
-        <div class="gleam-empty-state">
-          <div class="gleam-empty-icon">💬</div>
-          <div class="gleam-empty-title">${this.plugin.i18n.emptyTitle || '开始新的对话'}</div>
-          <div class="gleam-empty-description">${this.plugin.i18n.emptyDescription || '在下方输入框中输入消息，开始与 AI 对话'}</div>
-        </div>
-      `;
-    }
+    this.stateManager.updateEmptyState(this.currentMessages);
   }
 
   private attachEventListeners() {
-    this.sendButton.addEventListener('click', () => this.handleSend());
-    this.textarea.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        this.handleSend();
-      }
-    });
-
-    // 粘贴事件监听（支持粘贴图片）
-    this.textarea.addEventListener('paste', async (e) => {
-      await this.handlePaste(e);
-    });
-
-    // 图片上传按钮
     const imageButton = this.element.querySelector('#gleam-image-button') as HTMLButtonElement;
-    imageButton.addEventListener('click', () => {
-      this.imageInput.click();
-    });
     
-    // 文件选择事件
-    this.imageInput.addEventListener('change', async (e) => {
-      const input = e.target as HTMLInputElement;
-      const files = input.files;
-      if (!files || files.length === 0) return;
-
-      // 检查当前模型是否支持文件类型
-      const config = await this.storage.getConfig();
-      const currentModelInfo = this.allModelsInfo.find(m => m.id === config.currentModel);
-      const supportedInputTypes = currentModelInfo?.inputModalities || ['text'];
-
-      const imageFiles: File[] = [];
-      const audioFiles: File[] = [];
-      
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        const fileType = this.getFileTypeFromExtension(file.name);
-        
-        // 处理图片文件
-        if (fileType === 'image') {
-          if (!supportedInputTypes.includes('image')) {
-            this.showError('当前模型不支持图片类型的文件');
-            continue;
-          }
-          imageFiles.push(file);
-          continue;
-        }
-        
-        // 处理音频文件
-        if (fileType === 'audio') {
-          if (!supportedInputTypes.includes('audio')) {
-            this.showError('当前模型不支持音频类型的文件');
-            continue;
-          }
-          audioFiles.push(file);
-          continue;
-        }
-        
-        // 其他类型暂时不支持
-        const typeName = this.getFileTypeName(fileType);
-        if (!supportedInputTypes.includes(fileType)) {
-          this.showError(`当前模型不支持${typeName}类型的文件`);
-        } else {
-          this.showError(`${typeName}类型文件暂不支持，请等待后续更新`);
-        }
-      }
-
-      // 处理图片文件
-      if (imageFiles.length > 0) {
-        const images = await ImageHandler.handleImageSelect(
-          { target: { files: imageFiles } } as any,
-          (msg) => this.showError(msg)
-        );
-        this.selectedImages.push(...images);
-      }
-
-      // 处理音频文件
-      if (audioFiles.length > 0) {
-        const audio = await AudioHandler.handleAudioSelect(
-          audioFiles,
-          (msg) => this.showError(msg)
-        );
-        this.selectedAudio.push(...audio);
-      }
-
-      // 更新预览
-      this.updateAttachmentPreview();
-      
-      // 清空 input，允许重复选择同一文件
-      input.value = '';
-    });
-
-    // 模型选择按钮点击事件
-    this.modelButton.addEventListener('click', () => {
-      this.showModelDialog();
-    });
+    this.eventManager = new EventManager(
+      this.element,
+      this.textarea,
+      this.sendButton,
+      this.imageInput,
+      imageButton,
+      this.modelButton,
+      this.modelSelect,
+      this.contextToggle,
+      this.historyButton,
+      this.newChatButton,
+      this.parametersButton,
+      this.storage,
+      this.configHandler,
+      this.attachmentHandler,
+      this.plugin,
+      () => this.messageSendHandler.handleSend(),
+      () => this.configManager.showModelDialog(),
+      async () => {
+        this.configManager.updateModelButtonText(this.modelSelect.value);
+        await this.configManager.saveConfig();
+      },
+      async () => await this.configManager.saveConfig(),
+      () => this.chatManager.toggleHistory(),
+      () => this.chatManager.newChat(),
+      () => this.showParametersPanel(),
+      (msg) => this.stateManager.showError(msg)
+    );
     
-    // 当 select 改变时，更新按钮文本
-    this.modelSelect.addEventListener('change', () => {
-      this.updateModelButtonText(this.modelSelect.value);
-      this.saveConfig();
-    });
-
-    this.contextToggle.addEventListener('change', () => this.saveConfig());
-    this.historyButton.addEventListener('click', () => this.toggleHistory());
-    this.newChatButton.addEventListener('click', () => this.newChat());
-    this.parametersButton.addEventListener('click', () => this.showParametersPanel());
+    this.eventManager.attachAll();
   }
 
-  /**
-   * 显示参数配置面板
-   */
   private async showParametersPanel() {
-    const config = await this.storage.getConfig();
-    const currentModelInfo = this.allModelsInfo.find(m => m.id === config.currentModel);
-    const modelParameters = config.modelParameters || {};
-    const currentParameters = modelParameters[config.currentModel] || {};
-    
-    this.parametersPanel.show(currentModelInfo || null, currentParameters);
+    await this.parametersManager.showParametersPanel();
   }
 
-  /**
-   * 处理参数保存
-   */
   private async handleParametersSave(parameters: ModelParameters) {
-    const config = await this.storage.getConfig();
-    if (!config.modelParameters) {
-      config.modelParameters = {};
-    }
-    if (config.currentModel) {
-      config.modelParameters[config.currentModel] = parameters;
-      await this.storage.saveConfig(config);
-    }
-  }
-
-
-  /**
-   * 根据文件扩展名获取文件类型
-   */
-  private getFileTypeFromExtension(filename: string): string {
-    const ext = filename.toLowerCase().split('.').pop() || '';
-    
-    // 图片类型
-    const imageExts = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg', 'ico'];
-    if (imageExts.includes(ext)) return 'image';
-    
-    // 音频类型
-    const audioExts = ['mp3', 'wav', 'ogg', 'flac', 'aac', 'm4a', 'wma'];
-    if (audioExts.includes(ext)) return 'audio';
-    
-    // 视频类型
-    const videoExts = ['mp4', 'avi', 'mov', 'wmv', 'flv', 'mkv', 'webm'];
-    if (videoExts.includes(ext)) return 'video';
-    
-    // 文件类型（文本文件等）
-    const fileExts = ['txt', 'pdf', 'doc', 'docx', 'md', 'json', 'xml', 'csv'];
-    if (fileExts.includes(ext)) return 'file';
-    
-    // 默认返回 text
-    return 'text';
-  }
-
-  /**
-   * 获取文件类型的显示名称
-   */
-  private getFileTypeName(fileType: string): string {
-    const typeNames: Record<string, string> = {
-      image: '图片',
-      audio: '音频',
-      video: '视频',
-      file: '文件',
-      text: '文本'
-    };
-    return typeNames[fileType] || fileType;
-  }
-
-  /**
-   * 将文件转换为 base64
-   */
-  private fileToBase64(file: File): Promise<string> {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        const result = reader.result as string;
-        resolve(result);
-      };
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
-  }
-
-  /**
-   * 处理粘贴事件（支持粘贴图片）
-   */
-  private async handlePaste(e: ClipboardEvent) {
-    const clipboardData = e.clipboardData;
-    if (!clipboardData) return;
-
-    // 检查是否有图片
-    const items = clipboardData.items;
-    if (!items) return;
-
-    const imageFiles: File[] = [];
-    
-    // 遍历剪贴板项目
-    for (let i = 0; i < items.length; i++) {
-      const item = items[i];
-      
-      // 检查是否是图片类型
-      if (item.type.indexOf('image') !== -1) {
-        const file = item.getAsFile();
-        if (file) {
-          imageFiles.push(file);
-        }
-      }
-    }
-
-    // 如果没有图片，允许默认粘贴行为（粘贴文本）
-    if (imageFiles.length === 0) {
-      return;
-    }
-
-    // 如果有图片，阻止默认粘贴行为
-    e.preventDefault();
-
-    // 检查当前模型是否支持图片
-    const config = await this.storage.getConfig();
-    const currentModelInfo = this.allModelsInfo.find(m => m.id === config.currentModel);
-    const supportedInputTypes = currentModelInfo?.inputModalities || ['text'];
-
-    if (!supportedInputTypes.includes('image')) {
-      this.showError('当前模型不支持图片类型的文件');
-      return;
-    }
-
-    // 处理图片文件
-    try {
-      const images = await ImageHandler.handleImageSelect(
-        { target: { files: imageFiles } } as any,
-        (msg) => this.showError(msg)
-      );
-      
-      if (images.length > 0) {
-        this.selectedImages.push(...images);
-        this.updateAttachmentPreview();
-      }
-    } catch (error: any) {
-      Logger.error('[ChatPanel] 粘贴图片处理失败:', error);
-      this.showError('粘贴图片失败');
-    }
-  }
-
-  /**
-   * 更新附件预览（包括图片和音频）
-   */
-  private updateAttachmentPreview() {
-    const hasAttachments = this.selectedImages.length > 0 || this.selectedAudio.length > 0;
-    
-    if (!hasAttachments) {
-      this.imagePreviewContainer.innerHTML = '';
-      this.imagePreviewContainer.classList.remove('show');
-      return;
-    }
-
-    this.imagePreviewContainer.classList.add('show');
-    let html = '';
-
-    // 渲染图片
-    if (this.selectedImages.length > 0) {
-      html += this.selectedImages.map((image, index) => `
-        <div class="gleam-image-preview-item">
-          <img src="${this.escapeHtml(image)}" alt="Preview ${index + 1}">
-          <button class="gleam-image-preview-remove" data-type="image" data-index="${index}" title="删除">×</button>
-        </div>
-      `).join('');
-    }
-
-    // 渲染音频
-    if (this.selectedAudio.length > 0) {
-      html += this.selectedAudio.map((audio, index) => {
-        // 为预览生成 data URL（包含前缀，用于 audio 元素播放）
-        const audioDataUrl = `data:audio/${audio.format};base64,${audio.data}`;
-        return `
-        <div class="gleam-image-preview-item gleam-audio-preview-item">
-          <audio controls src="${this.escapeHtml(audioDataUrl)}" style="max-width: 200px; height: 32px;"></audio>
-          <span class="gleam-audio-name">${this.escapeHtml(audio.name)}</span>
-          <button class="gleam-image-preview-remove" data-type="audio" data-index="${index}" title="删除">×</button>
-        </div>
-      `;
-      }).join('');
-    }
-
-    this.imagePreviewContainer.innerHTML = html;
-
-    // 添加删除按钮事件
-    this.imagePreviewContainer.querySelectorAll('.gleam-image-preview-remove').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const element = e.target as HTMLElement;
-        const type = element.getAttribute('data-type');
-        const index = parseInt(element.getAttribute('data-index') || '0');
-        if (type === 'image') {
-          this.selectedImages.splice(index, 1);
-        } else if (type === 'audio') {
-          this.selectedAudio.splice(index, 1);
-        }
-        this.updateAttachmentPreview();
-      });
-    });
-  }
-
-  /**
-   * 转义 HTML 特殊字符
-   */
-  private escapeHtml(text: string): string {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
+    await this.parametersManager.handleParametersSave(parameters);
   }
 
   private async handleSend() {
-    const message = this.textarea.value.trim();
-    const hasAttachments = this.selectedImages.length > 0 || this.selectedAudio.length > 0;
-    
-    if ((!message && !hasAttachments) || this.isLoading) return;
-
-    const config = await this.storage.getConfig();
-    const providerConfig = config.openrouter;
-
-    // 检查 API key，优先从 config 中获取，如果没有则尝试从 plugin.data 中获取
-    let apiKey = providerConfig.apiKey;
-    if (!apiKey && (this.plugin as any).data?.openrouterApiKey) {
-      apiKey = (this.plugin as any).data.openrouterApiKey;
-      // 同步到 config
-      providerConfig.apiKey = apiKey;
-      await this.storage.saveConfig(config);
-    }
-
-    if (!apiKey || apiKey.trim() === '') {
-      this.showError(this.plugin.i18n.apiKeyRequired);
-      return;
-    }
-
-    if (!config.currentModel) {
-      this.showError(this.plugin.i18n.selectModel);
-      return;
-    }
-
-    this.isLoading = true;
-    this.sendButton.disabled = true;
-    this.textarea.disabled = true;
-
-    // 保存当前选择的附件
-    const imagesToSend = [...this.selectedImages];
-    const audioToSend = this.selectedAudio.map(a => ({ data: a.data, format: a.format }));
-    
-    await this.addMessage('user', message, imagesToSend, audioToSend);
-    this.textarea.value = '';
-    this.selectedImages = [];
-    this.selectedAudio = [];
-    this.updateAttachmentPreview();
-
-    const assistantMessageId = await this.addMessage('assistant', '');
-    const assistantElement = this.messagesContainer.querySelector(`[data-message-id="${assistantMessageId}"]`) as HTMLElement;
-    const contentElement = assistantElement.querySelector('.gleam-message-content') as HTMLElement;
-    
-    // 标记消息为流式处理中
-    assistantElement.classList.add('gleam-message-streaming');
-    this.updateMessageStatus(assistantElement, 'streaming');
-
-    try {
-      // 构建用户消息，包含图片和音频
-      const userMessage: ChatMessage = {
-        role: 'user',
-        content: message,
-        images: imagesToSend.length > 0 ? imagesToSend : undefined,
-        audio: audioToSend.length > 0 ? audioToSend : undefined
-      };
-      let messages: ChatMessage[] = [...this.currentMessages, userMessage];
-
-      if (config.enableContext && !this.hasContextInjected) {
-        Logger.log('[ChatPanel] 上下文注入已启用，开始获取文档内容');
-        const documentContent = await this.contextInjector.getCurrentDocumentContent();
-        if (documentContent) {
-          const contextPrompt = this.contextInjector.buildContextPrompt(documentContent);
-          messages = [
-            { role: 'system', content: contextPrompt },
-            ...messages
-          ];
-          this.hasContextInjected = true; // 标记已注入上下文
-          Logger.log('[ChatPanel] 上下文注入成功，消息数量:', messages.length);
-          Logger.log('[ChatPanel] 消息结构:', messages.map(m => ({ role: m.role, contentLength: m.content.length })));
-        } else {
-          Logger.warn('[ChatPanel] 上下文注入已启用但未获取到文档内容');
-        }
-      } else if (config.enableContext && this.hasContextInjected) {
-        Logger.log('[ChatPanel] 上下文已在本次对话中注入过，跳过重复注入');
-      } else {
-        Logger.log('[ChatPanel] 上下文注入未启用');
-      }
-
-      const aiProvider = this.providers.get(config.currentProvider);
-      if (!aiProvider) {
-        throw new Error('Provider not found');
-      }
-
-      // 获取模型参数配置
-      const modelParameters = config.modelParameters || {};
-      const currentModelParams = modelParameters[config.currentModel] || {};
-      
-      let fullContent = '';
-      const requestOptions: any = {
-        messages,
-        model: config.currentModel,
-        stream: true,
-        apiKey: apiKey,
-        // 使用配置的参数，如果没有配置则使用默认值
-        temperature: currentModelParams.temperature ?? 0.7,
-        ...currentModelParams // 展开其他参数
-      };
-      
-      // 如果配置了 max_tokens，使用它，否则使用 maxTokens
-      if (currentModelParams.max_tokens !== undefined) {
-        requestOptions.max_tokens = currentModelParams.max_tokens;
-      } else if (currentModelParams.maxTokens !== undefined) {
-        requestOptions.maxTokens = currentModelParams.maxTokens;
-      }
-
-      // 检查当前模型是否支持图片输出
-      const currentModelInfo = this.allModelsInfo.find(m => m.id === config.currentModel);
-      const supportsImageOutput = currentModelInfo?.outputModalities?.includes('image') || false;
-      
-      const imageUrls: string[] = [];
-      await aiProvider.chat(
-        requestOptions,
-        (chunk: string) => {
-          // 检查是否是图片标记
-          const imageMatch = chunk.match(/\[IMAGE:(.+?)\]/);
-          if (imageMatch) {
-            const imageUrl = imageMatch[1];
-            if (!imageUrls.includes(imageUrl)) {
-              imageUrls.push(imageUrl);
-            }
-            // 从内容中移除图片标记
-            fullContent = fullContent.replace(/\[IMAGE:.+?\]/g, '');
-          } else {
-            fullContent += chunk;
-          }
-          
-          // 渲染内容（包括图片），流式生成时传递 isStreaming 参数
-          const html = MessageRenderer.renderMessageContent(fullContent, imageUrls, supportsImageOutput, undefined, true);
-          // 保留按钮区域
-          const actionsContainer = contentElement.querySelector('.gleam-message-actions');
-          if (actionsContainer) {
-            const actionsHtml = actionsContainer.outerHTML;
-            contentElement.innerHTML = html + actionsHtml;
-            // 重新绑定按钮事件
-            const copyBtn = contentElement.querySelector('.gleam-copy-button') as HTMLButtonElement;
-            if (copyBtn) {
-              copyBtn.setAttribute('data-content', MarkdownRenderer.escapeHtml(fullContent));
-              copyBtn.onclick = async (e) => {
-                e.stopPropagation();
-                await this.copyToClipboard(fullContent);
-              };
-            }
-          } else {
-            contentElement.innerHTML = html;
-          }
-          this.scrollToBottom();
-        }
-      );
-
-      this.currentMessages.push(userMessage);
-      this.currentMessages.push({ 
-        role: 'assistant', 
-        content: fullContent,
-        images: imageUrls.length > 0 ? imageUrls : undefined
-      });
-
-      // 标记消息为已完成
-      assistantElement.classList.remove('gleam-message-streaming');
-      assistantElement.classList.add('gleam-message-completed');
-      this.updateMessageStatus(assistantElement, 'completed');
-
-      await this.saveCurrentChat();
-    } catch (error: any) {
-      this.showError(error.message || this.plugin.i18n.unknownError);
-      // 标记消息为错误状态
-      if (assistantElement) {
-        assistantElement.classList.remove('gleam-message-streaming');
-        assistantElement.classList.add('gleam-message-error');
-        this.updateMessageStatus(assistantElement, 'error');
-      }
-    } finally {
-      this.isLoading = false;
-      this.sendButton.disabled = false;
-      this.textarea.disabled = false;
-      this.textarea.focus();
-    }
+    await this.messageSendHandler.handleSend();
   }
 
-  private async addMessage(role: 'user' | 'assistant', content: string, images?: string[], audio?: Array<{ data: string; format: string }>): Promise<string> {
-    // 清除空状态显示
+  private async addMessage(
+    role: 'user' | 'assistant', 
+    content: string, 
+    images?: string[], 
+    audio?: Array<{ data: string; format: string }>
+  ): Promise<string> {
     if (this.messagesContainer.querySelector('.gleam-empty-state')) {
       this.messagesContainer.innerHTML = '';
     }
-
-    const messageId = `msg-${Date.now()}-${Math.random()}`;
-    const messageElement = document.createElement('div');
-    messageElement.className = `gleam-message gleam-message-${role}`;
-    messageElement.setAttribute('data-message-id', messageId);
-
-    const time = new Date().toLocaleTimeString();
     
-    // 检查模型是否支持图片输出（异步获取，但不阻塞渲染）
-    let supportsImageOutput = false;
-    try {
-      const config = await this.storage.getConfig();
-      const currentModelInfo = this.allModelsInfo.find(m => m.id === config.currentModel);
-      supportsImageOutput = currentModelInfo?.outputModalities?.includes('image') || false;
-    } catch (e) {
-      // 忽略错误，使用默认值
-    }
-    
-    // 渲染内容（包括图片和音频）
-    const contentHtml = role === 'assistant' 
-      ? MessageRenderer.renderMessageContent(content, images || [], supportsImageOutput, audio)
-      : MessageRenderer.renderMessageContent(MarkdownRenderer.escapeHtml(content), images || [], false, audio);
-    
-    // 为助手消息添加复制按钮、重新生成按钮和状态指示器
-    const copyButton = role === 'assistant' 
-      ? '<button class="gleam-copy-button" title="复制" data-content="' + MarkdownRenderer.escapeHtml(content) + '">📋</button>'
-      : '';
-    const regenerateButton = role === 'assistant'
-      ? '<button class="gleam-regenerate-button" title="' + this.plugin.i18n.regenerate + '" data-message-id="' + messageId + '">🔄</button>'
-      : '';
-    const statusIndicator = role === 'assistant'
-      ? '<div class="gleam-message-status"></div>'
-      : '';
-    messageElement.innerHTML = `
-      <div class="gleam-message-content">
-        ${contentHtml}
-        <div class="gleam-message-actions">
-          ${copyButton}
-          ${regenerateButton}
-        </div>
-      </div>
-      <div class="gleam-message-footer">
-        ${statusIndicator}
-        <div class="gleam-message-time">${time}</div>
-      </div>
-    `;
-    
-    // 为复制按钮添加事件监听
-    if (role === 'assistant') {
-      const copyBtn = messageElement.querySelector('.gleam-copy-button') as HTMLButtonElement;
-      if (copyBtn) {
-        copyBtn.addEventListener('click', async (e) => {
-          e.stopPropagation();
-          const textToCopy = copyBtn.getAttribute('data-content') || '';
-          await this.copyToClipboard(textToCopy);
-        });
-      }
-      
-      // 为重新生成按钮添加事件监听
-      const regenerateBtn = messageElement.querySelector('.gleam-regenerate-button') as HTMLButtonElement;
-      if (regenerateBtn) {
-        regenerateBtn.addEventListener('click', async (e) => {
-          e.stopPropagation();
-          await this.handleRegenerate(messageId);
-        });
-      }
-    }
-
-    // 为图片操作按钮添加事件监听
-    const imageActionBtns = messageElement.querySelectorAll('.gleam-image-action-btn');
-    imageActionBtns.forEach(btn => {
-      btn.addEventListener('click', async (e) => {
-        e.stopPropagation();
-        const action = (btn as HTMLElement).getAttribute('data-action');
-        const imageUrl = (btn as HTMLElement).getAttribute('data-image-url') || '';
-        
-        if (action === 'zoom') {
-          this.showImageZoom(imageUrl);
-        } else if (action === 'copy') {
-          await this.copyImageToClipboard(imageUrl);
-        }
-      });
-    });
-
-    this.messagesContainer.appendChild(messageElement);
-    this.scrollToBottom();
-    return messageId;
-  }
-
-
-  private scrollToBottom() {
-    this.messagesContainer.scrollTop = this.messagesContainer.scrollHeight;
-  }
-
-  /**
-   * 处理重新生成请求
-   */
-  private async handleRegenerate(messageId: string) {
-    if (this.isLoading) return;
-
-    // 找到对应的助手消息元素
-    const assistantElement = this.messagesContainer.querySelector(`[data-message-id="${messageId}"]`) as HTMLElement;
-    if (!assistantElement || !assistantElement.classList.contains('gleam-message-assistant')) {
-      return;
-    }
-
-    // 找到最后一条用户消息（应该是当前助手消息的前一条）
-    const allMessages = Array.from(this.messagesContainer.querySelectorAll('.gleam-message'));
-    const currentIndex = allMessages.indexOf(assistantElement);
-    if (currentIndex <= 0) {
-      this.showError('无法找到对应的用户消息');
-      return;
-    }
-
-    // 从currentMessages中删除当前的助手回复（最后一条消息应该是助手消息）
-    if (this.currentMessages.length > 0 && this.currentMessages[this.currentMessages.length - 1].role === 'assistant') {
-      this.currentMessages.pop();
-    }
-
-    // 从DOM中删除当前的助手消息
-    assistantElement.remove();
-
-    // 获取配置
-    const config = await this.storage.getConfig();
-    const providerConfig = config.openrouter;
-
-    // 检查 API key
-    let apiKey = providerConfig.apiKey;
-    if (!apiKey && (this.plugin as any).data?.openrouterApiKey) {
-      apiKey = (this.plugin as any).data.openrouterApiKey;
-      providerConfig.apiKey = apiKey;
-      await this.storage.saveConfig(config);
-    }
-
-    if (!apiKey || apiKey.trim() === '') {
-      this.showError(this.plugin.i18n.apiKeyRequired);
-      return;
-    }
-
-    if (!config.currentModel) {
-      this.showError(this.plugin.i18n.selectModel);
-      return;
-    }
-
-    this.isLoading = true;
-    this.sendButton.disabled = true;
-    this.textarea.disabled = true;
-
-    // 创建新的助手消息
-    const newAssistantMessageId = await this.addMessage('assistant', '');
-    const newAssistantElement = this.messagesContainer.querySelector(`[data-message-id="${newAssistantMessageId}"]`) as HTMLElement;
-    const contentElement = newAssistantElement.querySelector('.gleam-message-content') as HTMLElement;
-    
-    // 标记消息为流式处理中
-    newAssistantElement.classList.add('gleam-message-streaming');
-    this.updateMessageStatus(newAssistantElement, 'streaming');
-
-    try {
-      // 构建消息列表（包含上下文和所有历史消息）
-      let messages: ChatMessage[] = [...this.currentMessages];
-
-      // 调试日志：检查所有消息，特别是最后一条用户消息是否包含图片
-      Logger.log('[ChatPanel] 重新生成 - 消息列表:', messages.map(m => ({
-        role: m.role,
-        hasContent: !!m.content,
-        hasImages: !!(m.images && m.images.length > 0),
-        imageCount: m.images?.length || 0,
-        hasAudio: !!(m.audio && m.audio.length > 0)
-      })));
-      
-      const lastUserMessage = messages.filter(m => m.role === 'user').pop();
-      if (lastUserMessage && lastUserMessage.images && lastUserMessage.images.length > 0) {
-        Logger.log('[ChatPanel] 重新生成 - 最后一条用户消息包含图片，数量:', lastUserMessage.images.length);
-      } else {
-        Logger.warn('[ChatPanel] 重新生成 - 最后一条用户消息不包含图片');
-      }
-
-      if (config.enableContext && !this.hasContextInjected) {
-        Logger.log('[ChatPanel] 上下文注入已启用，开始获取文档内容');
-        const documentContent = await this.contextInjector.getCurrentDocumentContent();
-        if (documentContent) {
-          const contextPrompt = this.contextInjector.buildContextPrompt(documentContent);
-          messages = [
-            { role: 'system', content: contextPrompt },
-            ...messages
-          ];
-          this.hasContextInjected = true;
-          Logger.log('[ChatPanel] 上下文注入成功，消息数量:', messages.length);
-        } else {
-          Logger.warn('[ChatPanel] 上下文注入已启用但未获取到文档内容');
-        }
-      } else if (config.enableContext && this.hasContextInjected) {
-        Logger.log('[ChatPanel] 上下文已在本次对话中注入过，跳过重复注入');
-      } else {
-        Logger.log('[ChatPanel] 上下文注入未启用');
-      }
-
-      // 验证消息中的图片数据
-      const messagesWithImages = messages.filter(m => m.images && m.images.length > 0);
-      if (messagesWithImages.length > 0) {
-        Logger.log('[ChatPanel] 重新生成 - 消息中包含图片，数量:', messagesWithImages.length);
-        messagesWithImages.forEach((msg, idx) => {
-          Logger.log(`[ChatPanel] 消息 ${idx} (role: ${msg.role}) 包含 ${msg.images?.length || 0} 张图片`);
-        });
-      } else {
-        Logger.warn('[ChatPanel] 重新生成 - 消息中不包含图片');
-      }
-
-      const aiProvider = this.providers.get(config.currentProvider);
-      if (!aiProvider) {
-        throw new Error('Provider not found');
-      }
-
-      // 获取模型参数配置
-      const modelParameters = config.modelParameters || {};
-      const currentModelParams = modelParameters[config.currentModel] || {};
-      
-      let fullContent = '';
-      const requestOptions: any = {
-        messages,
-        model: config.currentModel,
-        stream: true,
-        apiKey: apiKey,
-        // 使用配置的参数，如果没有配置则使用默认值
-        temperature: currentModelParams.temperature ?? 0.7,
-        ...currentModelParams // 展开其他参数
-      };
-      
-      // 如果配置了 max_tokens，使用它，否则使用 maxTokens
-      if (currentModelParams.max_tokens !== undefined) {
-        requestOptions.max_tokens = currentModelParams.max_tokens;
-      } else if (currentModelParams.maxTokens !== undefined) {
-        requestOptions.maxTokens = currentModelParams.maxTokens;
-      }
-
-      // 检查当前模型是否支持图片输出
-      const currentModelInfo = this.allModelsInfo.find(m => m.id === config.currentModel);
-      const supportsImageOutput = currentModelInfo?.outputModalities?.includes('image') || false;
-      
-      const imageUrls: string[] = [];
-      await aiProvider.chat(
-        requestOptions,
-        (chunk: string) => {
-          // 检查是否是图片标记
-          const imageMatch = chunk.match(/\[IMAGE:(.+?)\]/);
-          if (imageMatch) {
-            const imageUrl = imageMatch[1];
-            if (!imageUrls.includes(imageUrl)) {
-              imageUrls.push(imageUrl);
-            }
-            // 从内容中移除图片标记
-            fullContent = fullContent.replace(/\[IMAGE:.+?\]/g, '');
-          } else {
-            fullContent += chunk;
-          }
-          
-          // 渲染内容（包括图片），流式生成时传递 isStreaming 参数
-          const html = MessageRenderer.renderMessageContent(fullContent, imageUrls, supportsImageOutput, undefined, true);
-          // 保留按钮区域
-          const actionsContainer = contentElement.querySelector('.gleam-message-actions');
-          if (actionsContainer) {
-            const actionsHtml = actionsContainer.outerHTML;
-            contentElement.innerHTML = html + actionsHtml;
-            // 重新绑定按钮事件
-            const copyBtn = contentElement.querySelector('.gleam-copy-button') as HTMLButtonElement;
-            if (copyBtn) {
-              copyBtn.setAttribute('data-content', MarkdownRenderer.escapeHtml(fullContent));
-              copyBtn.onclick = async (e) => {
-                e.stopPropagation();
-                await this.copyToClipboard(fullContent);
-              };
-            }
-            const regenerateBtn = contentElement.querySelector('.gleam-regenerate-button') as HTMLButtonElement;
-            if (regenerateBtn) {
-              regenerateBtn.setAttribute('data-message-id', newAssistantMessageId);
-              regenerateBtn.onclick = async (e) => {
-                e.stopPropagation();
-                await this.handleRegenerate(newAssistantMessageId);
-              };
-            }
-          } else {
-            contentElement.innerHTML = html;
-          }
-          
-          this.scrollToBottom();
-        }
-      );
-
-      // 更新currentMessages
-      this.currentMessages.push({ 
-        role: 'assistant', 
-        content: fullContent,
-        images: imageUrls.length > 0 ? imageUrls : undefined
-      });
-
-      // 标记消息为已完成
-      newAssistantElement.classList.remove('gleam-message-streaming');
-      newAssistantElement.classList.add('gleam-message-completed');
-      this.updateMessageStatus(newAssistantElement, 'completed');
-
-      await this.saveCurrentChat();
-    } catch (error: any) {
-      this.showError(error.message || this.plugin.i18n.unknownError);
-      // 标记消息为错误状态
-      if (newAssistantElement) {
-        newAssistantElement.classList.remove('gleam-message-streaming');
-        newAssistantElement.classList.add('gleam-message-error');
-        this.updateMessageStatus(newAssistantElement, 'error');
-      }
-    } finally {
-      this.isLoading = false;
-      this.sendButton.disabled = false;
-      this.textarea.disabled = false;
-      this.textarea.focus();
-    }
-  }
-
-  /**
-   * 更新消息状态指示器
-   */
-  private updateMessageStatus(messageElement: HTMLElement, status: 'streaming' | 'completed' | 'error') {
-    const statusElement = messageElement.querySelector('.gleam-message-status') as HTMLElement;
-    if (!statusElement) return;
-
-    // 移除所有状态类
-    statusElement.classList.remove('streaming', 'completed', 'error');
-    
-    // 添加当前状态类
-    statusElement.classList.add(status);
-    
-    // 更新状态文本
-    switch (status) {
-      case 'streaming':
-        statusElement.textContent = '正在输入...';
-        statusElement.title = '正在生成回复';
-        break;
-      case 'completed':
-        statusElement.textContent = '✓';
-        statusElement.title = '回复完成';
-        break;
-      case 'error':
-        statusElement.textContent = '✗';
-        statusElement.title = '生成失败';
-        break;
-    }
-  }
-
-  /**
-   * 复制文本到剪贴板
-   */
-  private async copyToClipboard(text: string): Promise<void> {
-    try {
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        await navigator.clipboard.writeText(text);
-        Logger.log('[ChatPanel] 文本已复制到剪贴板');
-      } else {
-        // 降级方案：使用传统方法
-        const textArea = document.createElement('textarea');
-        textArea.value = text;
-        textArea.style.position = 'fixed';
-        textArea.style.left = '-999999px';
-        document.body.appendChild(textArea);
-        textArea.select();
-        document.execCommand('copy');
-        document.body.removeChild(textArea);
-        Logger.log('[ChatPanel] 文本已复制到剪贴板（降级方案）');
-      }
-    } catch (error) {
-      Logger.error('[ChatPanel] 复制失败:', error);
-      this.showError('复制失败，请手动复制');
-    }
-  }
-
-  /**
-   * 显示图片放大查看器
-   */
-  private showImageZoom(imageUrl: string): void {
-    // 创建图片查看器
-    const zoomContainer = document.createElement('div');
-    zoomContainer.className = 'gleam-image-zoom-container';
-    zoomContainer.innerHTML = `
-      <div class="gleam-image-zoom-backdrop"></div>
-      <div class="gleam-image-zoom-content">
-        <button class="gleam-image-zoom-close">&times;</button>
-        <img src="${this.escapeHtml(imageUrl)}" alt="Zoomed image" class="gleam-image-zoom-image">
-      </div>
-    `;
-
-    document.body.appendChild(zoomContainer);
-    
-    // 关闭按钮事件
-    const closeBtn = zoomContainer.querySelector('.gleam-image-zoom-close') as HTMLButtonElement;
-    const backdrop = zoomContainer.querySelector('.gleam-image-zoom-backdrop') as HTMLElement;
-    
-    const closeZoom = () => {
-      zoomContainer.remove();
-    };
-    
-    closeBtn.addEventListener('click', closeZoom);
-    backdrop.addEventListener('click', closeZoom);
-    
-    // ESC 键关闭
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        closeZoom();
-        document.removeEventListener('keydown', handleKeyDown);
-      }
-    };
-    document.addEventListener('keydown', handleKeyDown);
-  }
-
-  /**
-   * 复制图片到剪贴板
-   */
-  private async copyImageToClipboard(imageUrl: string): Promise<void> {
-    try {
-      // 将图片 URL 转换为 Blob
-      const response = await fetch(imageUrl);
-      const blob = await response.blob();
-      
-      if (navigator.clipboard && navigator.clipboard.write) {
-        // 使用 Clipboard API
-        const item = new ClipboardItem({ [blob.type]: blob });
-        await navigator.clipboard.write([item]);
-        Logger.log('[ChatPanel] 图片已复制到剪贴板');
-      } else {
-        // 降级方案：创建临时图片元素并复制
-        const img = document.createElement('img');
-        img.src = imageUrl;
-        img.style.position = 'fixed';
-        img.style.left = '-999999px';
-        document.body.appendChild(img);
-        
-        // 使用 execCommand 复制（如果支持）
-        const range = document.createRange();
-        range.selectNode(img);
-        const selection = window.getSelection();
-        if (selection) {
-          selection.removeAllRanges();
-          selection.addRange(range);
-          document.execCommand('copy');
-          selection.removeAllRanges();
-        }
-        
-        document.body.removeChild(img);
-        Logger.log('[ChatPanel] 图片已复制到剪贴板（降级方案）');
-      }
-    } catch (error) {
-      Logger.error('[ChatPanel] 复制图片失败:', error);
-      this.showError('复制图片失败，请手动保存');
-    }
-  }
-
-  private showError(message: string) {
-    const errorElement = document.createElement('div');
-    errorElement.className = 'gleam-error';
-    errorElement.textContent = message;
-    this.messagesContainer.appendChild(errorElement);
-    this.scrollToBottom();
-    setTimeout(() => errorElement.remove(), 5000);
-  }
-
-  private async saveConfig() {
-    const config = await this.storage.getConfig();
-    config.currentProvider = 'openrouter';
-    config.currentModel = this.modelSelect.value;
-    config.enableContext = this.contextToggle.checked;
-    await this.storage.saveConfig(config);
-    await Logger.updateEnabled();
-  }
-
-  private async saveCurrentChat() {
-    if (this.currentMessages.length === 0) return;
-
-    const title = this.currentMessages[0]?.content?.substring(0, 50) || 'New Chat';
-    const historyItem = {
-      id: `chat-${Date.now()}`,
-      title,
-      messages: [...this.currentMessages],
-      timestamp: Date.now()
-    };
-
-    await this.storage.addHistoryItem(historyItem);
-  }
-
-  private toggleHistory() {
-    this.historyPanel.classList.toggle('show');
-    if (this.historyPanel.classList.contains('show')) {
-      this.loadHistoryList();
-    }
-  }
-
-  private async loadHistoryList() {
-    const history = await this.storage.getHistory();
-    HistoryManager.renderHistoryList(
-      history,
-      this.historyPanel,
-      this.plugin.i18n,
-      async (id: string) => {
-        await this.loadChatFromHistory(id);
-        this.historyPanel.classList.remove('show');
-      },
-      async (id: string) => {
-        await this.toggleFavorite(id);
-        this.loadHistoryList(); // 重新加载历史列表以更新UI
-      }
+    return await MessageHelper.addMessage(
+      this.messagesContainer,
+      role,
+      content,
+      images,
+      audio,
+      undefined,
+      this.plugin,
+      async (text) => await ChatUtils.copyToClipboard(text),
+      async (id) => await this.handleRegenerate(id),
+      (imageUrl) => ChatUtils.showImageZoom(imageUrl),
+      async (imageUrl) => await ChatUtils.copyImageToClipboard(imageUrl),
+      this.storage,
+      this.configHandler
     );
   }
 
-  private async loadChatFromHistory(id: string) {
-    const history = await this.storage.getHistory();
-    const item = history.find(h => h.id === id);
-    if (!item) return;
 
-    this.currentMessages = [...item.messages];
-    // 检查是否已有 system 消息（表示已注入上下文）
-    this.hasContextInjected = HistoryManager.hasContextInjected(this.currentMessages);
-    this.messagesContainer.innerHTML = '';
-    for (const msg of item.messages) {
-      if (msg.role !== 'system') {
-        await this.addMessage(msg.role as 'user' | 'assistant', msg.content, msg.images, msg.audio);
-      }
-    }
+
+  private async handleRegenerate(messageId: string) {
+    await this.regenerateHandler.handleRegenerate(messageId);
   }
 
-  /**
-   * 切换收藏状态
-   */
-  private async toggleFavorite(id: string): Promise<void> {
-    await this.storage.toggleFavorite(id);
+  private toggleHistory() {
+    this.chatManager.toggleHistory();
   }
 
   async newChat() {
-    // 立即清空消息和显示空状态（同步操作，立即响应）
-    this.currentMessages = [];
-    this.hasContextInjected = false; // 重置上下文注入标记
-    this.selectedImages = []; // 清空已选择的图片
-    this.selectedAudio = []; // 清空已选择的音频
-    this.updateAttachmentPreview(); // 更新预览
-    this.showNoMessages(); // 立即显示空状态
-    
-    // 异步处理配置和模型（不阻塞UI更新）
-    (async () => {
-      try {
-        const config = await this.storage.getConfig();
-        
-        // 如果模型列表已加载，直接使用；否则异步加载（不阻塞）
-        if (this.allModels.length === 0) {
-          // 只在模型列表为空时才加载
-          await this.loadModels('openrouter');
-        }
-        
-        if (config.currentModel) {
-          this.modelSelect.value = config.currentModel;
-          this.updateModelButtonText(config.currentModel);
-        }
-        
-        // 异步保存配置（不阻塞UI）
-        await this.saveConfig();
-      } catch (err) {
-        Logger.error('[ChatPanel] 新对话初始化失败:', err);
-      }
-    })();
+    await this.chatManager.newChat();
   }
 }
 
