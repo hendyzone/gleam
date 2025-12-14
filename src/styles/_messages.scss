@@ -90,6 +90,10 @@
   white-space: pre-wrap;
   position: relative;
   overflow: visible;
+  user-select: text;
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
 
   // 图片样式
   .gleam-message-image {
@@ -141,6 +145,10 @@
       min-width: 28px;
       min-height: 28px;
       transition: background 0.2s;
+      user-select: none;
+      -webkit-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
 
       &:hover {
         background: rgba(0, 0, 0, 0.8);
@@ -205,6 +213,22 @@
         animation-delay: 0;
       }
     }
+  }
+
+  // 确保所有内容可选中
+  * {
+    user-select: text;
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+  }
+
+  // 按钮和操作元素不可选中
+  button, .gleam-message-actions, .gleam-image-actions {
+    user-select: none !important;
+    -webkit-user-select: none !important;
+    -moz-user-select: none !important;
+    -ms-user-select: none !important;
   }
 
   // Markdown 样式
@@ -303,11 +327,19 @@
     border-collapse: collapse;
     margin: 8px 0;
     width: 100%;
+    user-select: text;
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
 
     th, td {
       border: 1px solid var(--b3-border-color);
       padding: 6px 12px;
       text-align: left;
+      user-select: text;
+      -webkit-user-select: text;
+      -moz-user-select: text;
+      -ms-user-select: text;
     }
 
     th {
@@ -344,6 +376,10 @@
   pointer-events: auto;
   opacity: 0;
   transition: opacity 0.2s;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
 }
 
 .gleam-message-assistant .gleam-message-content:hover .gleam-message-actions {
@@ -364,6 +400,10 @@
   justify-content: center;
   min-width: 28px;
   min-height: 28px;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
 
   &:hover {
     background: rgba(0, 0, 0, 0.2);
