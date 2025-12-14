@@ -65,7 +65,7 @@ export class ChatPanel {
           <div class="gleam-image-preview" id="gleam-image-preview"></div>
           <div class="gleam-input-wrapper">
             <input type="file" class="gleam-image-input" id="gleam-image-input" accept="image/*" multiple style="display: none;">
-            <button class="gleam-image-button" id="gleam-image-button" title="添加图片">📷</button>
+            <button class="gleam-image-button" id="gleam-image-button" title="添加文件">🧷</button>
             <textarea class="gleam-textarea" id="gleam-textarea" placeholder="${this.plugin.i18n.inputPlaceholder}"></textarea>
             <button class="gleam-send-button" id="gleam-send-button">${this.plugin.i18n.send}</button>
           </div>
