@@ -1,0 +1,92 @@
+/* 设置面板样式 */
+
+.gleam-settings-panel {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--b3-theme-background);
+  border: 1px solid var(--b3-border-color);
+  border-radius: 8px;
+  padding: 24px;
+  max-width: 500px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+  z-index: 10000;
+  display: none;
+
+  &.show {
+    display: block;
+  }
+}
+
+.gleam-settings-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.gleam-settings-title {
+  font-size: 18px;
+  font-weight: 500;
+}
+
+.gleam-settings-close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: var(--b3-theme-on-background);
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.gleam-settings-section {
+  margin-bottom: 24px;
+
+  &-title {
+    font-size: 14px;
+    font-weight: 500;
+    margin-bottom: 12px;
+  }
+}
+
+.gleam-settings-field {
+  margin-bottom: 12px;
+}
+
+.gleam-settings-label {
+  display: block;
+  font-size: 12px;
+  margin-bottom: 4px;
+  color: var(--b3-theme-on-background);
+}
+
+.gleam-settings-input {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid var(--b3-border-color);
+  border-radius: 4px;
+  background: var(--b3-theme-background);
+  color: var(--b3-theme-on-background);
+  font-size: 14px;
+
+  &:focus {
+    outline: none;
+    border-color: var(--b3-theme-primary);
+  }
+}
+
+.gleam-settings-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 24px;
+}
+

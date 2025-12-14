@@ -1,0 +1,89 @@
+/* 历史记录样式 */
+
+.gleam-history-panel {
+  max-height: 200px;
+  overflow-y: auto;
+  border-top: 1px solid var(--b3-border-color);
+  padding: 8px;
+  display: none;
+
+  &.show {
+    display: block;
+  }
+}
+
+.gleam-history-item {
+  padding: 8px;
+  border-bottom: 1px solid var(--b3-border-color);
+  cursor: pointer;
+  font-size: 12px;
+  transition: background 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+
+  &:hover {
+    background: var(--b3-theme-surface);
+  }
+
+  &-number {
+    flex-shrink: 0;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--b3-theme-surface);
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--b3-theme-on-background);
+    opacity: 0.7;
+  }
+
+  &-content {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &-title {
+    font-weight: 500;
+    margin-bottom: 4px;
+    word-break: break-word;
+  }
+
+  &-time {
+    font-size: 10px;
+    opacity: 0.6;
+  }
+}
+
+.gleam-history-favorite {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 18px;
+  padding: 4px;
+  opacity: 0.5;
+  transition: opacity 0.2s, transform 0.2s;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
+
+  &:hover {
+    opacity: 1;
+    background: var(--b3-theme-surface);
+    transform: scale(1.1);
+  }
+
+  &.active {
+    opacity: 1;
+    color: #ffa500;
+  }
+}
+

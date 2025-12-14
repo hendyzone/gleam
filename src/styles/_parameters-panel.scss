@@ -1,0 +1,124 @@
+/* 参数配置面板样式 */
+
+.gleam-parameters-panel {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 10001;
+  
+  &.show {
+    display: flex;
+  }
+  
+  &-content {
+    background: var(--b3-theme-background);
+    border-radius: 8px;
+    width: 90%;
+    max-width: 600px;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    overflow: hidden;
+  }
+  
+  &-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px;
+    border-bottom: 1px solid var(--b3-border-color);
+  }
+  
+  &-title {
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--b3-theme-on-background);
+  }
+  
+  &-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    color: var(--b3-theme-on-background);
+    cursor: pointer;
+    padding: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: background 0.2s;
+    
+    &:hover {
+      background: var(--b3-theme-surface);
+    }
+  }
+  
+  &-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  &-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 16px;
+    border-top: 1px solid var(--b3-border-color);
+  }
+}
+
+.gleam-parameter-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.gleam-parameter-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--b3-theme-on-background);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  
+  input[type="checkbox"] {
+    cursor: pointer;
+  }
+}
+
+.gleam-parameter-input {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid var(--b3-border-color);
+  border-radius: 4px;
+  background: var(--b3-theme-background);
+  color: var(--b3-theme-on-background);
+  font-size: 14px;
+  box-sizing: border-box;
+  
+  &:focus {
+    outline: none;
+    border-color: var(--b3-theme-primary);
+  }
+}
+
+.gleam-parameter-description {
+  font-size: 12px;
+  color: var(--b3-theme-on-background);
+  opacity: 0.6;
+  font-family: monospace;
+}
+

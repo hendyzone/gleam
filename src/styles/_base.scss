@@ -1,0 +1,127 @@
+/* 基础样式 - 容器、按钮、输入框等通用组件 */
+
+.gleam-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  background: var(--b3-theme-background);
+  position: relative;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.gleam-select {
+  flex: 1;
+  min-width: 120px;
+  padding: 4px 8px;
+  border: 1px solid var(--b3-border-color);
+  border-radius: 4px;
+  background: var(--b3-theme-background);
+  color: var(--b3-theme-on-background);
+  font-size: 12px;
+}
+
+.gleam-model-button {
+  flex: 1;
+  min-width: 300px; // 设置最小宽度，确保模型名称可见
+  padding: 6px 8px;
+  border: 1px solid var(--b3-border-color);
+  border-radius: 4px;
+  background: var(--b3-theme-background);
+  color: var(--b3-theme-on-background);
+  font-size: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  transition: background 0.2s;
+  
+  &:hover {
+    background: var(--b3-theme-surface);
+  }
+  
+  &-text {
+    flex: 1;
+    text-align: left;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  
+  &-arrow {
+    flex-shrink: 0;
+    font-size: 10px;
+    opacity: 0.6;
+  }
+}
+
+.gleam-model-select-hidden {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+  width: 0;
+  height: 0;
+}
+
+.gleam-button {
+  padding: 4px 12px;
+  border: 1px solid var(--b3-border-color);
+  border-radius: 4px;
+  background: var(--b3-theme-background);
+  color: var(--b3-theme-on-background);
+  cursor: pointer;
+  font-size: 12px;
+  transition: background 0.2s;
+  white-space: nowrap;
+  flex-shrink: 0;
+
+  &:hover {
+    background: var(--b3-theme-surface);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.gleam-toggle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  white-space: nowrap;
+  flex-shrink: 0;
+
+  input[type="checkbox"] {
+    cursor: pointer;
+  }
+}
+
+.gleam-loading {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--b3-border-color);
+  border-top-color: var(--b3-theme-primary);
+  border-radius: 50%;
+  animation: gleam-spin 0.6s linear infinite;
+}
+
+@keyframes gleam-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.gleam-error {
+  padding: 8px 12px;
+  background: var(--b3-theme-error);
+  color: var(--b3-theme-on-error);
+  border-radius: 4px;
+  font-size: 12px;
+  margin: 8px 0;
+}
+
