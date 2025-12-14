@@ -9,10 +9,13 @@ export class OpenRouterProvider extends BaseAIProvider {
   async chat(options: AIRequestOptions & { apiKey?: string }, onChunk?: (chunk: string) => void): Promise<AIResponse> {
     const url = `${this.baseURL}/chat/completions`;
     
-    // 转换消息格式，支持图片输入
+    // 转换消息格式，支持图片和音频输入
     const formattedMessages = options.messages.map(msg => {
-      // 如果消息包含图片，需要转换为多模态格式
-      if (msg.images && msg.images.length > 0) {
+      const hasImages = msg.images && msg.images.length > 0;
+      const hasAudio = msg.audio && msg.audio.length > 0;
+      
+      // 如果消息包含图片或音频，需要转换为多模态格式
+      if (hasImages || hasAudio) {
         const content: any[] = [];
         
         // 如果有文本内容，添加文本部分
@@ -24,14 +27,29 @@ export class OpenRouterProvider extends BaseAIProvider {
         }
         
         // 添加图片部分
-        msg.images.forEach(imageUrl => {
-          content.push({
-            type: 'image_url',
-            image_url: {
-              url: imageUrl // 支持 base64 data URL 或普通 URL
-            }
+        if (hasImages) {
+          msg.images!.forEach(imageUrl => {
+            content.push({
+              type: 'image_url',
+              image_url: {
+                url: imageUrl // 支持 base64 data URL 或普通 URL
+              }
+            });
           });
-        });
+        }
+        
+        // 添加音频部分
+        if (hasAudio) {
+          msg.audio!.forEach(audioItem => {
+            content.push({
+              type: 'input_audio',
+              input_audio: {
+                data: audioItem.data, // base64 编码的音频数据（不含 data URL 前缀）
+                format: audioItem.format // 音频格式，如 wav, mp3 等
+              }
+            });
+          });
+        }
         
         return {
           role: msg.role,

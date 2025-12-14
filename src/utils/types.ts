@@ -18,6 +18,7 @@ export interface ChatMessage {
   role: 'user' | 'assistant' | 'system';
   content: string;
   images?: string[]; // 图片 URL 或 base64 数据
+  audio?: Array<{ data: string; format: string }>; // 音频数据（base64）和格式
 }
 
 export interface ChatHistory {

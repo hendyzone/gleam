@@ -5,12 +5,13 @@ import { MarkdownRenderer } from '../utils/markdown';
  */
 export class MessageRenderer {
   /**
-   * 渲染消息内容（包括文本和图片）
+   * 渲染消息内容（包括文本、图片和音频）
    */
   static renderMessageContent(
     content: string,
     images: string[],
-    supportsImageOutput: boolean
+    supportsImageOutput: boolean,
+    audio?: Array<{ data: string; format: string }>
   ): string {
     let html = '';
     
@@ -18,6 +19,15 @@ export class MessageRenderer {
     if (images && images.length > 0) {
       images.forEach(imageUrl => {
         html += `<div class="gleam-message-image"><img src="${this.escapeHtml(imageUrl)}" alt="Generated image" loading="lazy"></div>`;
+      });
+    }
+    
+    // 如果有音频，渲染音频
+    if (audio && audio.length > 0) {
+      audio.forEach(audioItem => {
+        // 为显示生成 data URL（包含前缀，用于 audio 元素播放）
+        const audioDataUrl = `data:audio/${audioItem.format};base64,${audioItem.data}`;
+        html += `<div class="gleam-message-audio"><audio controls src="${this.escapeHtml(audioDataUrl)}" style="max-width: 100%;"></audio></div>`;
       });
     }
     

@@ -7,6 +7,7 @@ import { Logger } from '../utils/logger';
 import { MarkdownRenderer } from './utils/markdown';
 import { MessageRenderer } from './components/messageRenderer';
 import { ImageHandler } from './components/imageHandler';
+import { AudioHandler } from './components/audioHandler';
 import { HistoryManager } from './components/historyManager';
 import { ModelDialog } from './components/modelDialog';
 
@@ -25,9 +26,10 @@ export class ChatPanel {
   private historyButton!: HTMLButtonElement;
   private newChatButton!: HTMLButtonElement;
   private historyPanel!: HTMLElement;
-  private imageInput!: HTMLInputElement; // 图片选择输入框
-  private imagePreviewContainer!: HTMLElement; // 图片预览容器
+  private imageInput!: HTMLInputElement; // 文件选择输入框
+  private imagePreviewContainer!: HTMLElement; // 附件预览容器
   private selectedImages: string[] = []; // 已选择的图片（base64 或 URL）
+  private selectedAudio: Array<{ name: string; data: string; format: string }> = []; // 已选择的音频（包含文件名、base64数据和格式）
 
   private plugin: any;
   private storage: DataStorage;
@@ -64,7 +66,7 @@ export class ChatPanel {
         <div class="gleam-input-area">
           <div class="gleam-image-preview" id="gleam-image-preview"></div>
           <div class="gleam-input-wrapper">
-            <input type="file" class="gleam-image-input" id="gleam-image-input" accept="image/*" multiple style="display: none;">
+            <input type="file" class="gleam-image-input" id="gleam-image-input" accept="image/*,audio/*" multiple style="display: none;">
             <button class="gleam-image-button" id="gleam-image-button" title="添加文件">🧷</button>
             <textarea class="gleam-textarea" id="gleam-textarea" placeholder="${this.plugin.i18n.inputPlaceholder}"></textarea>
             <button class="gleam-send-button" id="gleam-send-button">${this.plugin.i18n.send}</button>
@@ -261,13 +263,76 @@ export class ChatPanel {
       this.imageInput.click();
     });
     
-    // 图片选择事件
+    // 文件选择事件
     this.imageInput.addEventListener('change', async (e) => {
-      const images = await ImageHandler.handleImageSelect(e, (msg) => this.showError(msg));
-      this.selectedImages.push(...images);
-      this.updateImagePreview();
+      const input = e.target as HTMLInputElement;
+      const files = input.files;
+      if (!files || files.length === 0) return;
+
+      // 检查当前模型是否支持文件类型
+      const config = await this.storage.getConfig();
+      const currentModelInfo = this.allModelsInfo.find(m => m.id === config.currentModel);
+      const supportedInputTypes = currentModelInfo?.inputModalities || ['text'];
+
+      const imageFiles: File[] = [];
+      const audioFiles: File[] = [];
+      
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const fileType = this.getFileTypeFromExtension(file.name);
+        
+        // 处理图片文件
+        if (fileType === 'image') {
+          if (!supportedInputTypes.includes('image')) {
+            this.showError('当前模型不支持图片类型的文件');
+            continue;
+          }
+          imageFiles.push(file);
+          continue;
+        }
+        
+        // 处理音频文件
+        if (fileType === 'audio') {
+          if (!supportedInputTypes.includes('audio')) {
+            this.showError('当前模型不支持音频类型的文件');
+            continue;
+          }
+          audioFiles.push(file);
+          continue;
+        }
+        
+        // 其他类型暂时不支持
+        const typeName = this.getFileTypeName(fileType);
+        if (!supportedInputTypes.includes(fileType)) {
+          this.showError(`当前模型不支持${typeName}类型的文件`);
+        } else {
+          this.showError(`${typeName}类型文件暂不支持，请等待后续更新`);
+        }
+      }
+
+      // 处理图片文件
+      if (imageFiles.length > 0) {
+        const images = await ImageHandler.handleImageSelect(
+          { target: { files: imageFiles } } as any,
+          (msg) => this.showError(msg)
+        );
+        this.selectedImages.push(...images);
+      }
+
+      // 处理音频文件
+      if (audioFiles.length > 0) {
+        const audio = await AudioHandler.handleAudioSelect(
+          audioFiles,
+          (msg) => this.showError(msg)
+        );
+        this.selectedAudio.push(...audio);
+      }
+
+      // 更新预览
+      this.updateAttachmentPreview();
+      
       // 清空 input，允许重复选择同一文件
-      (e.target as HTMLInputElement).value = '';
+      input.value = '';
     });
 
     // 模型选择按钮点击事件
@@ -288,6 +353,46 @@ export class ChatPanel {
 
 
   /**
+   * 根据文件扩展名获取文件类型
+   */
+  private getFileTypeFromExtension(filename: string): string {
+    const ext = filename.toLowerCase().split('.').pop() || '';
+    
+    // 图片类型
+    const imageExts = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg', 'ico'];
+    if (imageExts.includes(ext)) return 'image';
+    
+    // 音频类型
+    const audioExts = ['mp3', 'wav', 'ogg', 'flac', 'aac', 'm4a', 'wma'];
+    if (audioExts.includes(ext)) return 'audio';
+    
+    // 视频类型
+    const videoExts = ['mp4', 'avi', 'mov', 'wmv', 'flv', 'mkv', 'webm'];
+    if (videoExts.includes(ext)) return 'video';
+    
+    // 文件类型（文本文件等）
+    const fileExts = ['txt', 'pdf', 'doc', 'docx', 'md', 'json', 'xml', 'csv'];
+    if (fileExts.includes(ext)) return 'file';
+    
+    // 默认返回 text
+    return 'text';
+  }
+
+  /**
+   * 获取文件类型的显示名称
+   */
+  private getFileTypeName(fileType: string): string {
+    const typeNames: Record<string, string> = {
+      image: '图片',
+      audio: '音频',
+      video: '视频',
+      file: '文件',
+      text: '文本'
+    };
+    return typeNames[fileType] || fileType;
+  }
+
+  /**
    * 将文件转换为 base64
    */
   private fileToBase64(file: File): Promise<string> {
@@ -303,24 +408,77 @@ export class ChatPanel {
   }
 
   /**
-   * 更新图片预览
+   * 更新附件预览（包括图片和音频）
    */
-  private updateImagePreview() {
-    ImageHandler.updateImagePreview(
-      this.imagePreviewContainer,
-      this.selectedImages,
-      (index: number) => {
-        this.selectedImages.splice(index, 1);
-        this.updateImagePreview();
-      }
-    );
+  private updateAttachmentPreview() {
+    const hasAttachments = this.selectedImages.length > 0 || this.selectedAudio.length > 0;
+    
+    if (!hasAttachments) {
+      this.imagePreviewContainer.innerHTML = '';
+      this.imagePreviewContainer.classList.remove('show');
+      return;
+    }
+
+    this.imagePreviewContainer.classList.add('show');
+    let html = '';
+
+    // 渲染图片
+    if (this.selectedImages.length > 0) {
+      html += this.selectedImages.map((image, index) => `
+        <div class="gleam-image-preview-item">
+          <img src="${this.escapeHtml(image)}" alt="Preview ${index + 1}">
+          <button class="gleam-image-preview-remove" data-type="image" data-index="${index}" title="删除">×</button>
+        </div>
+      `).join('');
+    }
+
+    // 渲染音频
+    if (this.selectedAudio.length > 0) {
+      html += this.selectedAudio.map((audio, index) => {
+        // 为预览生成 data URL（包含前缀，用于 audio 元素播放）
+        const audioDataUrl = `data:audio/${audio.format};base64,${audio.data}`;
+        return `
+        <div class="gleam-image-preview-item gleam-audio-preview-item">
+          <audio controls src="${this.escapeHtml(audioDataUrl)}" style="max-width: 200px; height: 32px;"></audio>
+          <span class="gleam-audio-name">${this.escapeHtml(audio.name)}</span>
+          <button class="gleam-image-preview-remove" data-type="audio" data-index="${index}" title="删除">×</button>
+        </div>
+      `;
+      }).join('');
+    }
+
+    this.imagePreviewContainer.innerHTML = html;
+
+    // 添加删除按钮事件
+    this.imagePreviewContainer.querySelectorAll('.gleam-image-preview-remove').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const element = e.target as HTMLElement;
+        const type = element.getAttribute('data-type');
+        const index = parseInt(element.getAttribute('data-index') || '0');
+        if (type === 'image') {
+          this.selectedImages.splice(index, 1);
+        } else if (type === 'audio') {
+          this.selectedAudio.splice(index, 1);
+        }
+        this.updateAttachmentPreview();
+      });
+    });
+  }
+
+  /**
+   * 转义 HTML 特殊字符
+   */
+  private escapeHtml(text: string): string {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
   }
 
   private async handleSend() {
     const message = this.textarea.value.trim();
-    const hasImages = this.selectedImages.length > 0;
+    const hasAttachments = this.selectedImages.length > 0 || this.selectedAudio.length > 0;
     
-    if ((!message && !hasImages) || this.isLoading) return;
+    if ((!message && !hasAttachments) || this.isLoading) return;
 
     const config = await this.storage.getConfig();
     const providerConfig = config.openrouter;
@@ -348,13 +506,15 @@ export class ChatPanel {
     this.sendButton.disabled = true;
     this.textarea.disabled = true;
 
-    // 保存当前选择的图片
+    // 保存当前选择的附件
     const imagesToSend = [...this.selectedImages];
+    const audioToSend = this.selectedAudio.map(a => ({ data: a.data, format: a.format }));
     
-    await this.addMessage('user', message, imagesToSend);
+    await this.addMessage('user', message, imagesToSend, audioToSend);
     this.textarea.value = '';
     this.selectedImages = [];
-    this.updateImagePreview();
+    this.selectedAudio = [];
+    this.updateAttachmentPreview();
 
     const assistantMessageId = await this.addMessage('assistant', '');
     const assistantElement = this.messagesContainer.querySelector(`[data-message-id="${assistantMessageId}"]`) as HTMLElement;
@@ -365,11 +525,12 @@ export class ChatPanel {
     this.updateMessageStatus(assistantElement, 'streaming');
 
     try {
-      // 构建用户消息，包含图片
+      // 构建用户消息，包含图片和音频
       const userMessage: ChatMessage = {
         role: 'user',
         content: message,
-        images: imagesToSend.length > 0 ? imagesToSend : undefined
+        images: imagesToSend.length > 0 ? imagesToSend : undefined,
+        audio: audioToSend.length > 0 ? audioToSend : undefined
       };
       let messages: ChatMessage[] = [...this.currentMessages, userMessage];
 
@@ -465,7 +626,7 @@ export class ChatPanel {
     }
   }
 
-  private async addMessage(role: 'user' | 'assistant', content: string, images?: string[]): Promise<string> {
+  private async addMessage(role: 'user' | 'assistant', content: string, images?: string[], audio?: Array<{ data: string; format: string }>): Promise<string> {
     // 清除空状态显示
     if (this.messagesContainer.querySelector('.gleam-empty-state')) {
       this.messagesContainer.innerHTML = '';
@@ -488,10 +649,10 @@ export class ChatPanel {
       // 忽略错误，使用默认值
     }
     
-    // 渲染内容（包括图片）
+    // 渲染内容（包括图片和音频）
     const contentHtml = role === 'assistant' 
-      ? MessageRenderer.renderMessageContent(content, images || [], supportsImageOutput)
-      : MessageRenderer.renderMessageContent(MarkdownRenderer.escapeHtml(content), images || [], false);
+      ? MessageRenderer.renderMessageContent(content, images || [], supportsImageOutput, audio)
+      : MessageRenderer.renderMessageContent(MarkdownRenderer.escapeHtml(content), images || [], false, audio);
     
     // 为助手消息添加复制按钮和状态指示器
     const copyButton = role === 'assistant' 
@@ -656,7 +817,7 @@ export class ChatPanel {
     this.messagesContainer.innerHTML = '';
     for (const msg of item.messages) {
       if (msg.role !== 'system') {
-        await this.addMessage(msg.role as 'user' | 'assistant', msg.content, msg.images);
+        await this.addMessage(msg.role as 'user' | 'assistant', msg.content, msg.images, msg.audio);
       }
     }
   }
@@ -672,7 +833,8 @@ export class ChatPanel {
     this.currentMessages = [];
     this.hasContextInjected = false; // 重置上下文注入标记
     this.selectedImages = []; // 清空已选择的图片
-    this.updateImagePreview(); // 更新预览
+    this.selectedAudio = []; // 清空已选择的音频
+    this.updateAttachmentPreview(); // 更新预览
     
     // 切换到默认模型
     const config = await this.storage.getConfig();
