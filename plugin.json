@@ -19,8 +19,8 @@
     "zh_CN": "萤窗"
   },
   "description": {
-    "default": "AI chat assistant plugin for SiYuan with support for multiple providers (OpenRouter, SiliconFlow)",
-    "zh_CN": "思源笔记AI对话助手插件，支持多个供应商（OpenRouter、SiliconFlow）"
+    "default": "AI chat assistant plugin for SiYuan with support OpenRouter ",
+    "zh_CN": "思源笔记AI对话助手插件，支持 OpenRouter "
   },
   "readme": {
     "default": "README.md",
