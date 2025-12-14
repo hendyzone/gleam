@@ -31,6 +31,8 @@
   "removeSpace": "Remove Space",
   "insertDocument": "Insert Document",
   "insertDocumentTooltip": "Insert current document content into input",
-  "insertDocumentError": "Document content not found, please ensure a document is open"
+  "insertDocumentError": "Document content not found, please ensure a document is open",
+  "filterInput": "Input Type:",
+  "filterOutput": "Output Type:"
 }
 

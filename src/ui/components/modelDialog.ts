@@ -12,6 +12,8 @@ export class ModelDialog {
   private onSelect: (modelId: string) => void;
   private allModelsInfo: ModelInfo[] = [];
   private currentValue: string = '';
+  private selectedInputTypes: Set<string> = new Set();
+  private selectedOutputTypes: Set<string> = new Set();
 
   constructor(
     i18n: any,
@@ -37,6 +39,26 @@ export class ModelDialog {
         <div class="gleam-model-dialog-search">
           <input type="text" class="gleam-model-dialog-search-input" placeholder="${i18n.searchModel || '搜索模型...'}" autocomplete="off">
         </div>
+        <div class="gleam-model-dialog-filters">
+          <div class="gleam-model-dialog-filter-group">
+            <div class="gleam-model-dialog-filter-label">${i18n.filterInput || '输入类型:'}</div>
+            <div class="gleam-model-dialog-filter-options" data-type="input">
+              <label class="gleam-model-dialog-filter-option"><input type="checkbox" value="text">文本</label>
+              <label class="gleam-model-dialog-filter-option"><input type="checkbox" value="image">图片</label>
+              <label class="gleam-model-dialog-filter-option"><input type="checkbox" value="file">文件</label>
+              <label class="gleam-model-dialog-filter-option"><input type="checkbox" value="audio">音频</label>
+              <label class="gleam-model-dialog-filter-option"><input type="checkbox" value="video">视频</label>
+            </div>
+          </div>
+          <div class="gleam-model-dialog-filter-group">
+            <div class="gleam-model-dialog-filter-label">${i18n.filterOutput || '输出类型:'}</div>
+            <div class="gleam-model-dialog-filter-options" data-type="output">
+              <label class="gleam-model-dialog-filter-option"><input type="checkbox" value="text">文本</label>
+              <label class="gleam-model-dialog-filter-option"><input type="checkbox" value="image">图片</label>
+              <label class="gleam-model-dialog-filter-option"><input type="checkbox" value="embeddings">嵌入</label>
+            </div>
+          </div>
+        </div>
         <div class="gleam-model-dialog-list"></div>
       </div>
     `;
@@ -61,6 +83,15 @@ export class ModelDialog {
       this.renderList(keyword);
     });
 
+    // 过滤功能
+    const filterOptions = dialog.querySelectorAll('.gleam-model-dialog-filter-option input[type="checkbox"]');
+    filterOptions.forEach(checkbox => {
+      checkbox.addEventListener('change', () => {
+        this.updateFilterState();
+        this.renderList(this.searchInput.value.toLowerCase());
+      });
+    });
+
     return dialog;
   }
 
@@ -71,6 +102,9 @@ export class ModelDialog {
     this.allModelsInfo = modelsInfo;
     this.currentValue = currentValue;
     this.searchInput.value = '';
+    this.selectedInputTypes.clear();
+    this.selectedOutputTypes.clear();
+    this.updateFilterCheckboxes();
     this.renderList('');
     this.dialog.classList.add('show');
     this.searchInput.focus();
@@ -84,17 +118,71 @@ export class ModelDialog {
   }
 
   /**
+   * 更新过滤状态
+   */
+  private updateFilterState(): void {
+    this.selectedInputTypes.clear();
+    this.selectedOutputTypes.clear();
+
+    const inputCheckboxes = this.dialog.querySelectorAll('.gleam-model-dialog-filter-options[data-type="input"] input[type="checkbox"]:checked');
+    inputCheckboxes.forEach((cb: Element) => {
+      const checkbox = cb as HTMLInputElement;
+      this.selectedInputTypes.add(checkbox.value);
+    });
+
+    const outputCheckboxes = this.dialog.querySelectorAll('.gleam-model-dialog-filter-options[data-type="output"] input[type="checkbox"]:checked');
+    outputCheckboxes.forEach((cb: Element) => {
+      const checkbox = cb as HTMLInputElement;
+      this.selectedOutputTypes.add(checkbox.value);
+    });
+  }
+
+  /**
+   * 更新过滤复选框状态
+   */
+  private updateFilterCheckboxes(): void {
+    const inputCheckboxes = this.dialog.querySelectorAll('.gleam-model-dialog-filter-options[data-type="input"] input[type="checkbox"]');
+    inputCheckboxes.forEach((cb: Element) => {
+      const checkbox = cb as HTMLInputElement;
+      checkbox.checked = this.selectedInputTypes.has(checkbox.value);
+    });
+
+    const outputCheckboxes = this.dialog.querySelectorAll('.gleam-model-dialog-filter-options[data-type="output"] input[type="checkbox"]');
+    outputCheckboxes.forEach((cb: Element) => {
+      const checkbox = cb as HTMLInputElement;
+      checkbox.checked = this.selectedOutputTypes.has(checkbox.value);
+    });
+  }
+
+  /**
    * 渲染模型列表
    */
   private renderList(keyword: string): void {
     let modelsInfo = this.allModelsInfo;
     
+    // 文本搜索过滤
     if (keyword) {
       const lowerKeyword = keyword.toLowerCase();
-      modelsInfo = this.allModelsInfo.filter(model => 
+      modelsInfo = modelsInfo.filter(model => 
         model.id.toLowerCase().includes(lowerKeyword) ||
         model.name.toLowerCase().includes(lowerKeyword)
       );
+    }
+
+    // 输入类型过滤
+    if (this.selectedInputTypes.size > 0) {
+      modelsInfo = modelsInfo.filter(model => {
+        const inputMods = model.inputModalities || ['text'];
+        return Array.from(this.selectedInputTypes).some(type => inputMods.includes(type));
+      });
+    }
+
+    // 输出类型过滤
+    if (this.selectedOutputTypes.size > 0) {
+      modelsInfo = modelsInfo.filter(model => {
+        const outputMods = model.outputModalities || ['text'];
+        return Array.from(this.selectedOutputTypes).some(type => outputMods.includes(type));
+      });
     }
 
     // 模态标签映射
