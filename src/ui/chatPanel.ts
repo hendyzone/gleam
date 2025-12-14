@@ -874,6 +874,22 @@ export class ChatPanel {
       // 构建消息列表（包含上下文和所有历史消息）
       let messages: ChatMessage[] = [...this.currentMessages];
 
+      // 调试日志：检查所有消息，特别是最后一条用户消息是否包含图片
+      Logger.log('[ChatPanel] 重新生成 - 消息列表:', messages.map(m => ({
+        role: m.role,
+        hasContent: !!m.content,
+        hasImages: !!(m.images && m.images.length > 0),
+        imageCount: m.images?.length || 0,
+        hasAudio: !!(m.audio && m.audio.length > 0)
+      })));
+      
+      const lastUserMessage = messages.filter(m => m.role === 'user').pop();
+      if (lastUserMessage && lastUserMessage.images && lastUserMessage.images.length > 0) {
+        Logger.log('[ChatPanel] 重新生成 - 最后一条用户消息包含图片，数量:', lastUserMessage.images.length);
+      } else {
+        Logger.warn('[ChatPanel] 重新生成 - 最后一条用户消息不包含图片');
+      }
+
       if (config.enableContext && !this.hasContextInjected) {
         Logger.log('[ChatPanel] 上下文注入已启用，开始获取文档内容');
         const documentContent = await this.contextInjector.getCurrentDocumentContent();
@@ -892,6 +908,17 @@ export class ChatPanel {
         Logger.log('[ChatPanel] 上下文已在本次对话中注入过，跳过重复注入');
       } else {
         Logger.log('[ChatPanel] 上下文注入未启用');
+      }
+
+      // 验证消息中的图片数据
+      const messagesWithImages = messages.filter(m => m.images && m.images.length > 0);
+      if (messagesWithImages.length > 0) {
+        Logger.log('[ChatPanel] 重新生成 - 消息中包含图片，数量:', messagesWithImages.length);
+        messagesWithImages.forEach((msg, idx) => {
+          Logger.log(`[ChatPanel] 消息 ${idx} (role: ${msg.role}) 包含 ${msg.images?.length || 0} 张图片`);
+        });
+      } else {
+        Logger.warn('[ChatPanel] 重新生成 - 消息中不包含图片');
       }
 
       const aiProvider = this.providers.get(config.currentProvider);
