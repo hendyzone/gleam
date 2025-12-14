@@ -33,6 +33,7 @@
   "insertDocumentTooltip": "将当前文档内容插入到输入框",
   "insertDocumentError": "未找到文档内容，请确保当前有打开的文档",
   "filterInput": "输入类型:",
-  "filterOutput": "输出类型:"
+  "filterOutput": "输出类型:",
+  "regenerate": "重新生成"
 }
 

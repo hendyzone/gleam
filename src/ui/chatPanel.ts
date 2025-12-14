@@ -592,7 +592,23 @@ export class ChatPanel {
           
           // 渲染内容（包括图片）
           const html = MessageRenderer.renderMessageContent(fullContent, imageUrls, supportsImageOutput);
-          contentElement.innerHTML = html;
+          // 保留按钮区域
+          const actionsContainer = contentElement.querySelector('.gleam-message-actions');
+          if (actionsContainer) {
+            const actionsHtml = actionsContainer.outerHTML;
+            contentElement.innerHTML = html + actionsHtml;
+            // 重新绑定按钮事件
+            const copyBtn = contentElement.querySelector('.gleam-copy-button') as HTMLButtonElement;
+            if (copyBtn) {
+              copyBtn.setAttribute('data-content', MarkdownRenderer.escapeHtml(fullContent));
+              copyBtn.onclick = async (e) => {
+                e.stopPropagation();
+                await this.copyToClipboard(fullContent);
+              };
+            }
+          } else {
+            contentElement.innerHTML = html;
+          }
           this.scrollToBottom();
         }
       );
@@ -654,9 +670,12 @@ export class ChatPanel {
       ? MessageRenderer.renderMessageContent(content, images || [], supportsImageOutput, audio)
       : MessageRenderer.renderMessageContent(MarkdownRenderer.escapeHtml(content), images || [], false, audio);
     
-    // 为助手消息添加复制按钮和状态指示器
+    // 为助手消息添加复制按钮、重新生成按钮和状态指示器
     const copyButton = role === 'assistant' 
       ? '<button class="gleam-copy-button" title="复制" data-content="' + MarkdownRenderer.escapeHtml(content) + '">📋</button>'
+      : '';
+    const regenerateButton = role === 'assistant'
+      ? '<button class="gleam-regenerate-button" title="' + this.plugin.i18n.regenerate + '" data-message-id="' + messageId + '">🔄</button>'
       : '';
     const statusIndicator = role === 'assistant'
       ? '<div class="gleam-message-status"></div>'
@@ -664,7 +683,10 @@ export class ChatPanel {
     messageElement.innerHTML = `
       <div class="gleam-message-content">
         ${contentHtml}
-        ${copyButton}
+        <div class="gleam-message-actions">
+          ${copyButton}
+          ${regenerateButton}
+        </div>
       </div>
       <div class="gleam-message-footer">
         ${statusIndicator}
@@ -680,6 +702,15 @@ export class ChatPanel {
           e.stopPropagation();
           const textToCopy = copyBtn.getAttribute('data-content') || '';
           await this.copyToClipboard(textToCopy);
+        });
+      }
+      
+      // 为重新生成按钮添加事件监听
+      const regenerateBtn = messageElement.querySelector('.gleam-regenerate-button') as HTMLButtonElement;
+      if (regenerateBtn) {
+        regenerateBtn.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          await this.handleRegenerate(messageId);
         });
       }
     }
@@ -708,6 +739,189 @@ export class ChatPanel {
 
   private scrollToBottom() {
     this.messagesContainer.scrollTop = this.messagesContainer.scrollHeight;
+  }
+
+  /**
+   * 处理重新生成请求
+   */
+  private async handleRegenerate(messageId: string) {
+    if (this.isLoading) return;
+
+    // 找到对应的助手消息元素
+    const assistantElement = this.messagesContainer.querySelector(`[data-message-id="${messageId}"]`) as HTMLElement;
+    if (!assistantElement || !assistantElement.classList.contains('gleam-message-assistant')) {
+      return;
+    }
+
+    // 找到最后一条用户消息（应该是当前助手消息的前一条）
+    const allMessages = Array.from(this.messagesContainer.querySelectorAll('.gleam-message'));
+    const currentIndex = allMessages.indexOf(assistantElement);
+    if (currentIndex <= 0) {
+      this.showError('无法找到对应的用户消息');
+      return;
+    }
+
+    // 从currentMessages中删除当前的助手回复（最后一条消息应该是助手消息）
+    if (this.currentMessages.length > 0 && this.currentMessages[this.currentMessages.length - 1].role === 'assistant') {
+      this.currentMessages.pop();
+    }
+
+    // 从DOM中删除当前的助手消息
+    assistantElement.remove();
+
+    // 获取配置
+    const config = await this.storage.getConfig();
+    const providerConfig = config.openrouter;
+
+    // 检查 API key
+    let apiKey = providerConfig.apiKey;
+    if (!apiKey && (this.plugin as any).data?.openrouterApiKey) {
+      apiKey = (this.plugin as any).data.openrouterApiKey;
+      providerConfig.apiKey = apiKey;
+      await this.storage.saveConfig(config);
+    }
+
+    if (!apiKey || apiKey.trim() === '') {
+      this.showError(this.plugin.i18n.apiKeyRequired);
+      return;
+    }
+
+    if (!config.currentModel) {
+      this.showError(this.plugin.i18n.selectModel);
+      return;
+    }
+
+    this.isLoading = true;
+    this.sendButton.disabled = true;
+    this.textarea.disabled = true;
+
+    // 创建新的助手消息
+    const newAssistantMessageId = await this.addMessage('assistant', '');
+    const newAssistantElement = this.messagesContainer.querySelector(`[data-message-id="${newAssistantMessageId}"]`) as HTMLElement;
+    const contentElement = newAssistantElement.querySelector('.gleam-message-content') as HTMLElement;
+    
+    // 标记消息为流式处理中
+    newAssistantElement.classList.add('gleam-message-streaming');
+    this.updateMessageStatus(newAssistantElement, 'streaming');
+
+    try {
+      // 构建消息列表（包含上下文和所有历史消息）
+      let messages: ChatMessage[] = [...this.currentMessages];
+
+      if (config.enableContext && !this.hasContextInjected) {
+        Logger.log('[ChatPanel] 上下文注入已启用，开始获取文档内容');
+        const documentContent = await this.contextInjector.getCurrentDocumentContent();
+        if (documentContent) {
+          const contextPrompt = this.contextInjector.buildContextPrompt(documentContent);
+          messages = [
+            { role: 'system', content: contextPrompt },
+            ...messages
+          ];
+          this.hasContextInjected = true;
+          Logger.log('[ChatPanel] 上下文注入成功，消息数量:', messages.length);
+        } else {
+          Logger.warn('[ChatPanel] 上下文注入已启用但未获取到文档内容');
+        }
+      } else if (config.enableContext && this.hasContextInjected) {
+        Logger.log('[ChatPanel] 上下文已在本次对话中注入过，跳过重复注入');
+      } else {
+        Logger.log('[ChatPanel] 上下文注入未启用');
+      }
+
+      const aiProvider = this.providers.get(config.currentProvider);
+      if (!aiProvider) {
+        throw new Error('Provider not found');
+      }
+
+      let fullContent = '';
+      const requestOptions: any = {
+        messages,
+        model: config.currentModel,
+        stream: true,
+        temperature: 0.7,
+        apiKey: apiKey
+      };
+
+      // 检查当前模型是否支持图片输出
+      const currentModelInfo = this.allModelsInfo.find(m => m.id === config.currentModel);
+      const supportsImageOutput = currentModelInfo?.outputModalities?.includes('image') || false;
+      
+      const imageUrls: string[] = [];
+      await aiProvider.chat(
+        requestOptions,
+        (chunk: string) => {
+          // 检查是否是图片标记
+          const imageMatch = chunk.match(/\[IMAGE:(.+?)\]/);
+          if (imageMatch) {
+            const imageUrl = imageMatch[1];
+            if (!imageUrls.includes(imageUrl)) {
+              imageUrls.push(imageUrl);
+            }
+            // 从内容中移除图片标记
+            fullContent = fullContent.replace(/\[IMAGE:.+?\]/g, '');
+          } else {
+            fullContent += chunk;
+          }
+          
+          // 渲染内容（包括图片）
+          const html = MessageRenderer.renderMessageContent(fullContent, imageUrls, supportsImageOutput);
+          // 保留按钮区域
+          const actionsContainer = contentElement.querySelector('.gleam-message-actions');
+          if (actionsContainer) {
+            const actionsHtml = actionsContainer.outerHTML;
+            contentElement.innerHTML = html + actionsHtml;
+            // 重新绑定按钮事件
+            const copyBtn = contentElement.querySelector('.gleam-copy-button') as HTMLButtonElement;
+            if (copyBtn) {
+              copyBtn.setAttribute('data-content', MarkdownRenderer.escapeHtml(fullContent));
+              copyBtn.onclick = async (e) => {
+                e.stopPropagation();
+                await this.copyToClipboard(fullContent);
+              };
+            }
+            const regenerateBtn = contentElement.querySelector('.gleam-regenerate-button') as HTMLButtonElement;
+            if (regenerateBtn) {
+              regenerateBtn.setAttribute('data-message-id', newAssistantMessageId);
+              regenerateBtn.onclick = async (e) => {
+                e.stopPropagation();
+                await this.handleRegenerate(newAssistantMessageId);
+              };
+            }
+          } else {
+            contentElement.innerHTML = html;
+          }
+          
+          this.scrollToBottom();
+        }
+      );
+
+      // 更新currentMessages
+      this.currentMessages.push({ 
+        role: 'assistant', 
+        content: fullContent,
+        images: imageUrls.length > 0 ? imageUrls : undefined
+      });
+
+      // 标记消息为已完成
+      newAssistantElement.classList.remove('gleam-message-streaming');
+      newAssistantElement.classList.add('gleam-message-completed');
+      this.updateMessageStatus(newAssistantElement, 'completed');
+
+      await this.saveCurrentChat();
+    } catch (error: any) {
+      this.showError(error.message || this.plugin.i18n.unknownError);
+      // 标记消息为错误状态
+      if (newAssistantElement) {
+        newAssistantElement.classList.remove('gleam-message-streaming');
+        newAssistantElement.classList.add('gleam-message-error');
+        this.updateMessageStatus(newAssistantElement, 'error');
+      }
+    } finally {
+      this.isLoading = false;
+      this.sendButton.disabled = false;
+      this.textarea.disabled = false;
+      this.textarea.focus();
+    }
   }
 
   /**

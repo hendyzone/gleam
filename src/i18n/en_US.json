@@ -33,6 +33,7 @@
   "insertDocumentTooltip": "Insert current document content into input",
   "insertDocumentError": "Document content not found, please ensure a document is open",
   "filterInput": "Input Type:",
-  "filterOutput": "Output Type:"
+  "filterOutput": "Output Type:",
+  "regenerate": "Regenerate"
 }
 
