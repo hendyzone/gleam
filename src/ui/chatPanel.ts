@@ -707,8 +707,8 @@ export class ChatPanel {
             fullContent += chunk;
           }
           
-          // 渲染内容（包括图片）
-          const html = MessageRenderer.renderMessageContent(fullContent, imageUrls, supportsImageOutput);
+          // 渲染内容（包括图片），流式生成时传递 isStreaming 参数
+          const html = MessageRenderer.renderMessageContent(fullContent, imageUrls, supportsImageOutput, undefined, true);
           // 保留按钮区域
           const actionsContainer = contentElement.querySelector('.gleam-message-actions');
           if (actionsContainer) {
@@ -1020,8 +1020,8 @@ export class ChatPanel {
             fullContent += chunk;
           }
           
-          // 渲染内容（包括图片）
-          const html = MessageRenderer.renderMessageContent(fullContent, imageUrls, supportsImageOutput);
+          // 渲染内容（包括图片），流式生成时传递 isStreaming 参数
+          const html = MessageRenderer.renderMessageContent(fullContent, imageUrls, supportsImageOutput, undefined, true);
           // 保留按钮区域
           const actionsContainer = contentElement.querySelector('.gleam-message-actions');
           if (actionsContainer) {
@@ -1297,24 +1297,36 @@ export class ChatPanel {
   }
 
   async newChat() {
+    // 立即清空消息和显示空状态（同步操作，立即响应）
     this.currentMessages = [];
     this.hasContextInjected = false; // 重置上下文注入标记
     this.selectedImages = []; // 清空已选择的图片
     this.selectedAudio = []; // 清空已选择的音频
     this.updateAttachmentPreview(); // 更新预览
+    this.showNoMessages(); // 立即显示空状态
     
-    // 切换到默认模型
-    const config = await this.storage.getConfig();
-    await this.loadModels('openrouter');
-    if (config.currentModel) {
-      this.modelSelect.value = config.currentModel;
-      this.updateModelButtonText(config.currentModel);
-    }
-    
-    // 保存配置（确保UI状态与配置同步）
-    await this.saveConfig();
-    
-    this.showNoMessages();
+    // 异步处理配置和模型（不阻塞UI更新）
+    (async () => {
+      try {
+        const config = await this.storage.getConfig();
+        
+        // 如果模型列表已加载，直接使用；否则异步加载（不阻塞）
+        if (this.allModels.length === 0) {
+          // 只在模型列表为空时才加载
+          await this.loadModels('openrouter');
+        }
+        
+        if (config.currentModel) {
+          this.modelSelect.value = config.currentModel;
+          this.updateModelButtonText(config.currentModel);
+        }
+        
+        // 异步保存配置（不阻塞UI）
+        await this.saveConfig();
+      } catch (err) {
+        Logger.error('[ChatPanel] 新对话初始化失败:', err);
+      }
+    })();
   }
 }
 

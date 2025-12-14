@@ -172,6 +172,41 @@
     font-style: italic;
   }
 
+  .gleam-message-loading {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 0;
+    opacity: 0.7;
+  }
+
+  .gleam-loading-dots {
+    display: inline-flex;
+    gap: 2px;
+    align-items: center;
+    
+    span {
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+      animation: gleam-dot-bounce 1.4s infinite ease-in-out;
+      
+      &:nth-child(1) {
+        animation-delay: -0.32s;
+      }
+      
+      &:nth-child(2) {
+        animation-delay: -0.16s;
+      }
+      
+      &:nth-child(3) {
+        animation-delay: 0;
+      }
+    }
+  }
+
   // Markdown 样式
   h1, h2, h3, h4, h5, h6 {
     margin: 16px 0 8px 0;
@@ -285,6 +320,17 @@
     border: none;
     border-top: 1px solid var(--b3-border-color);
     margin: 16px 0;
+  }
+}
+
+@keyframes gleam-dot-bounce {
+  0%, 80%, 100% {
+    transform: scale(0.8);
+    opacity: 0.5;
+  }
+  40% {
+    transform: scale(1.2);
+    opacity: 1;
   }
 }
 

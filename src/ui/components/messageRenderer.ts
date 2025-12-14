@@ -11,7 +11,8 @@ export class MessageRenderer {
     content: string,
     images: string[],
     supportsImageOutput: boolean,
-    audio?: Array<{ data: string; format: string }>
+    audio?: Array<{ data: string; format: string }>,
+    isStreaming?: boolean
   ): string {
     let html = '';
     
@@ -47,7 +48,16 @@ export class MessageRenderer {
       html += textHtml;
     }
     
-    return html || '<div class="gleam-message-empty">无内容</div>';
+    // 如果没有内容，根据是否正在流式生成显示不同的提示
+    if (!html) {
+      if (isStreaming) {
+        return '<div class="gleam-message-loading"><span class="gleam-loading-dots"><span>.</span><span>.</span><span>.</span></span></div>';
+      } else {
+        return '<div class="gleam-message-empty">无内容</div>';
+      }
+    }
+    
+    return html;
   }
 
   /**
