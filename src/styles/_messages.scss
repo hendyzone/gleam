@@ -50,14 +50,24 @@
 .gleam-message {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
 
   &-user {
     align-items: flex-end;
+    margin-bottom: 2px;
 
     .gleam-message-content {
-      background: var(--b3-theme-primary);
-      color: var(--b3-theme-on-primary);
+      background: var(--b3-theme-primary) !important;
+      color: var(--b3-theme-on-primary) !important;
+      padding: 2px 10px !important;
+      max-width: 70%;
+      width: fit-content;
+      min-width: auto;
+      line-height: 1.2 !important;
+      display: inline-block;
+      box-sizing: border-box;
+      margin: 0 !important;
+      border-radius: 6px;
     }
   }
 
