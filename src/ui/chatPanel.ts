@@ -1,4 +1,4 @@
-import { ChatMessage, ModelInfo } from '../utils/types';
+import { ChatMessage, ModelInfo, ModelParameters } from '../utils/types';
 import { DataStorage } from '../storage/data';
 import { ContextInjector } from '../features/context-injection';
 import { OpenRouterProvider } from '../api/openrouter';
@@ -10,6 +10,7 @@ import { ImageHandler } from './components/imageHandler';
 import { AudioHandler } from './components/audioHandler';
 import { HistoryManager } from './components/historyManager';
 import { ModelDialog } from './components/modelDialog';
+import { ParametersPanel } from './components/parametersPanel';
 
 export class ChatPanel {
   private element: HTMLElement;
@@ -22,6 +23,8 @@ export class ChatPanel {
   private allModels: string[] = []; // 存储所有模型ID列表（用于兼容）
   private allModelsInfo: ModelInfo[] = []; // 存储所有模型详细信息
   private modelDialog!: ModelDialog; // 模型选择对话框
+  private parametersPanel!: ParametersPanel; // 参数配置面板
+  private parametersButton!: HTMLButtonElement; // 参数配置按钮
   private contextToggle!: HTMLInputElement;
   private historyButton!: HTMLButtonElement;
   private newChatButton!: HTMLButtonElement;
@@ -83,6 +86,7 @@ export class ChatPanel {
               <input type="checkbox" id="gleam-context-toggle">
               <span>${this.plugin.i18n.contextInjection}</span>
             </label>
+            <button class="gleam-button" id="gleam-parameters-button" title="模型参数">⚙️</button>
             <button class="gleam-button" id="gleam-new-chat-button">${this.plugin.i18n.newChat || '新建对话'}</button>
             <button class="gleam-button" id="gleam-history-button">${this.plugin.i18n.history}</button>
           </div>
@@ -99,6 +103,7 @@ export class ChatPanel {
     this.contextToggle = this.element.querySelector('#gleam-context-toggle') as HTMLInputElement;
     this.historyButton = this.element.querySelector('#gleam-history-button') as HTMLButtonElement;
     this.newChatButton = this.element.querySelector('#gleam-new-chat-button') as HTMLButtonElement;
+    this.parametersButton = this.element.querySelector('#gleam-parameters-button') as HTMLButtonElement;
     this.historyPanel = this.element.querySelector('#gleam-history-panel')!;
     this.imageInput = this.element.querySelector('#gleam-image-input') as HTMLInputElement;
     this.imagePreviewContainer = this.element.querySelector('#gleam-image-preview')!;
@@ -111,6 +116,12 @@ export class ChatPanel {
         this.updateModelButtonText(modelId);
         this.saveConfig();
       }
+    );
+
+    // 创建参数配置面板
+    this.parametersPanel = new ParametersPanel(
+      (parameters) => this.handleParametersSave(parameters),
+      () => {}
     );
     
     this.updateEmptyState();
@@ -354,6 +365,33 @@ export class ChatPanel {
     this.contextToggle.addEventListener('change', () => this.saveConfig());
     this.historyButton.addEventListener('click', () => this.toggleHistory());
     this.newChatButton.addEventListener('click', () => this.newChat());
+    this.parametersButton.addEventListener('click', () => this.showParametersPanel());
+  }
+
+  /**
+   * 显示参数配置面板
+   */
+  private async showParametersPanel() {
+    const config = await this.storage.getConfig();
+    const currentModelInfo = this.allModelsInfo.find(m => m.id === config.currentModel);
+    const modelParameters = config.modelParameters || {};
+    const currentParameters = modelParameters[config.currentModel] || {};
+    
+    this.parametersPanel.show(currentModelInfo || null, currentParameters);
+  }
+
+  /**
+   * 处理参数保存
+   */
+  private async handleParametersSave(parameters: ModelParameters) {
+    const config = await this.storage.getConfig();
+    if (!config.modelParameters) {
+      config.modelParameters = {};
+    }
+    if (config.currentModel) {
+      config.modelParameters[config.currentModel] = parameters;
+      await this.storage.saveConfig(config);
+    }
   }
 
 
@@ -626,14 +664,27 @@ export class ChatPanel {
         throw new Error('Provider not found');
       }
 
+      // 获取模型参数配置
+      const modelParameters = config.modelParameters || {};
+      const currentModelParams = modelParameters[config.currentModel] || {};
+      
       let fullContent = '';
       const requestOptions: any = {
         messages,
         model: config.currentModel,
         stream: true,
-        temperature: 0.7,
-        apiKey: apiKey
+        apiKey: apiKey,
+        // 使用配置的参数，如果没有配置则使用默认值
+        temperature: currentModelParams.temperature ?? 0.7,
+        ...currentModelParams // 展开其他参数
       };
+      
+      // 如果配置了 max_tokens，使用它，否则使用 maxTokens
+      if (currentModelParams.max_tokens !== undefined) {
+        requestOptions.max_tokens = currentModelParams.max_tokens;
+      } else if (currentModelParams.maxTokens !== undefined) {
+        requestOptions.maxTokens = currentModelParams.maxTokens;
+      }
 
       // 检查当前模型是否支持图片输出
       const currentModelInfo = this.allModelsInfo.find(m => m.id === config.currentModel);
@@ -926,14 +977,27 @@ export class ChatPanel {
         throw new Error('Provider not found');
       }
 
+      // 获取模型参数配置
+      const modelParameters = config.modelParameters || {};
+      const currentModelParams = modelParameters[config.currentModel] || {};
+      
       let fullContent = '';
       const requestOptions: any = {
         messages,
         model: config.currentModel,
         stream: true,
-        temperature: 0.7,
-        apiKey: apiKey
+        apiKey: apiKey,
+        // 使用配置的参数，如果没有配置则使用默认值
+        temperature: currentModelParams.temperature ?? 0.7,
+        ...currentModelParams // 展开其他参数
       };
+      
+      // 如果配置了 max_tokens，使用它，否则使用 maxTokens
+      if (currentModelParams.max_tokens !== undefined) {
+        requestOptions.max_tokens = currentModelParams.max_tokens;
+      } else if (currentModelParams.maxTokens !== undefined) {
+        requestOptions.maxTokens = currentModelParams.maxTokens;
+      }
 
       // 检查当前模型是否支持图片输出
       const currentModelInfo = this.allModelsInfo.find(m => m.id === config.currentModel);

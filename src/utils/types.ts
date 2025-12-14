@@ -12,6 +12,7 @@ export interface PluginConfig {
   enableContext: boolean;
   enableDebugLog: boolean;
   maxHistoryCount: number; // 最大历史数量
+  modelParameters?: Record<string, ModelParameters>; // 每个模型的参数配置，key 为 modelId
 }
 
 export interface ChatMessage {
@@ -41,12 +42,38 @@ export interface AIRequestOptions {
   temperature?: number;
   maxTokens?: number;
   images?: string[]; // 图片输入（用于图生图）
+  [key: string]: any; // 允许其他参数（如 top_p, top_k 等）
 }
 
 export interface AIResponse {
   content: string;
   done: boolean;
 }
+
+export type SupportedParameter = 
+  | 'temperature'
+  | 'top_p'
+  | 'top_k'
+  | 'min_p'
+  | 'top_a'
+  | 'frequency_penalty'
+  | 'presence_penalty'
+  | 'repetition_penalty'
+  | 'max_tokens'
+  | 'logit_bias'
+  | 'logprobs'
+  | 'top_logprobs'
+  | 'seed'
+  | 'response_format'
+  | 'structured_outputs'
+  | 'stop'
+  | 'tools'
+  | 'tool_choice'
+  | 'parallel_tool_calls'
+  | 'include_reasoning'
+  | 'reasoning'
+  | 'web_search_options'
+  | 'verbosity';
 
 export interface ModelInfo {
   id: string;
@@ -55,5 +82,29 @@ export interface ModelInfo {
   outputModalities: string[]; // 输出模态: text, image, embeddings
   description?: string;
   contextLength?: number;
+  supportedParameters?: SupportedParameter[]; // 支持的参数列表
+  defaultParameters?: {
+    temperature?: number;
+    top_p?: number;
+    frequency_penalty?: number;
+  };
+}
+
+export interface ModelParameters {
+  temperature?: number;
+  top_p?: number;
+  top_k?: number;
+  min_p?: number;
+  top_a?: number;
+  frequency_penalty?: number;
+  presence_penalty?: number;
+  repetition_penalty?: number;
+  max_tokens?: number;
+  maxTokens?: number; // 兼容性
+  seed?: number;
+  stop?: string[] | string;
+  parallel_tool_calls?: boolean;
+  include_reasoning?: boolean;
+  [key: string]: any; // 允许其他参数
 }
 

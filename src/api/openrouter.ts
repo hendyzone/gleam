@@ -271,7 +271,9 @@ export class OpenRouterProvider extends BaseAIProvider {
         inputModalities: model.architecture?.input_modalities || ['text'],
         outputModalities: model.architecture?.output_modalities || ['text'],
         description: model.description || '',
-        contextLength: model.context_length || null
+        contextLength: model.context_length || null,
+        supportedParameters: model.supported_parameters || [],
+        defaultParameters: model.default_parameters || undefined
       }));
     } catch (error) {
       Logger.error('Failed to fetch OpenRouter models with info:', error);
