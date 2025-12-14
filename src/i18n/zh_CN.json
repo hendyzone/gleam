@@ -34,6 +34,12 @@
   "insertDocumentError": "未找到文档内容，请确保当前有打开的文档",
   "filterInput": "输入类型:",
   "filterOutput": "输出类型:",
-  "regenerate": "重新生成"
+  "regenerate": "重新生成",
+  "exportToDocument": "导出为文档",
+  "exportToDocumentTooltip": "将当前对话导出为思源笔记文档",
+  "exportNoMessages": "没有可导出的消息",
+  "exportNoNotebook": "未找到可用的笔记本，请先打开一个笔记本",
+  "exportFailed": "导出失败",
+  "exportSuccess": "导出成功"
 }
 

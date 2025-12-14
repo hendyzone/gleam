@@ -19,6 +19,7 @@ export class EventManager {
     private historyButton: HTMLButtonElement,
     private newChatButton: HTMLButtonElement,
     private parametersButton: HTMLButtonElement,
+    private exportButton: HTMLButtonElement,
     private storage: DataStorage,
     private configHandler: ConfigHandler,
     private attachmentHandler: AttachmentHandler,
@@ -30,6 +31,7 @@ export class EventManager {
     private onHistoryToggle: () => void,
     private onNewChat: () => Promise<void>,
     private onParametersPanel: () => Promise<void>,
+    private onExport: () => Promise<void>,
     private onError: (message: string) => void
   ) {}
 
@@ -125,6 +127,10 @@ export class EventManager {
     
     this.parametersButton.addEventListener('click', () => {
       this.onParametersPanel();
+    });
+    
+    this.exportButton.addEventListener('click', () => {
+      this.onExport();
     });
   }
 }

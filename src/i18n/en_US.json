@@ -34,6 +34,12 @@
   "insertDocumentError": "Document content not found, please ensure a document is open",
   "filterInput": "Input Type:",
   "filterOutput": "Output Type:",
-  "regenerate": "Regenerate"
+  "regenerate": "Regenerate",
+  "exportToDocument": "Export to Document",
+  "exportToDocumentTooltip": "Export current conversation as SiYuan document",
+  "exportNoMessages": "No messages to export",
+  "exportNoNotebook": "No notebook found, please open a notebook first",
+  "exportFailed": "Export failed",
+  "exportSuccess": "Export successful"
 }
 

@@ -16,6 +16,7 @@ AI chat assistant plugin for SiYuan Note. Currently supports OpenRouter AI provi
 - 🔧 **Parameter Configuration**: Customize temperature, max tokens, and other parameters
 - 🔄 **Regenerate**: Regenerate AI responses with one click
 - 📋 **Copy & Export**: Copy messages or images to clipboard
+- 📄 **Export to Document**: Export current conversation as a SiYuan document with automatic image conversion
 
 ## Installation
 
@@ -72,6 +73,7 @@ Click the parameters button (⚙️) to configure:
 - **History Management**: Click history button to view and manage past conversations
 - **New Chat**: Start a fresh conversation with the new chat button
 - **Regenerate**: Click regenerate button on any AI message to get a new response
+- **Export to Document**: Click the export button (📄) to export the current conversation as a SiYuan document. Base64 images will be automatically converted to files
 
 ## Supported Models
 

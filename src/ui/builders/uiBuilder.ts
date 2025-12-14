@@ -35,6 +35,7 @@ export class UIBuilder {
               <span>${plugin.i18n.contextInjection}</span>
             </label>
             <button class="gleam-button" id="gleam-parameters-button" title="模型参数">⚙️</button>
+            <button class="gleam-button" id="gleam-export-button" title="${plugin.i18n.exportToDocumentTooltip || '导出为文档'}">📄</button>
             <button class="gleam-button" id="gleam-new-chat-button">${plugin.i18n.newChat || '新建对话'}</button>
             <button class="gleam-button" id="gleam-history-button">${plugin.i18n.history}</button>
           </div>
@@ -57,6 +58,7 @@ export class UIBuilder {
     historyButton: HTMLButtonElement;
     newChatButton: HTMLButtonElement;
     parametersButton: HTMLButtonElement;
+    exportButton: HTMLButtonElement;
     historyPanel: HTMLElement;
     imageInput: HTMLInputElement;
     imagePreviewContainer: HTMLElement;
@@ -72,6 +74,7 @@ export class UIBuilder {
       historyButton: element.querySelector('#gleam-history-button') as HTMLButtonElement,
       newChatButton: element.querySelector('#gleam-new-chat-button') as HTMLButtonElement,
       parametersButton: element.querySelector('#gleam-parameters-button') as HTMLButtonElement,
+      exportButton: element.querySelector('#gleam-export-button') as HTMLButtonElement,
       historyPanel: element.querySelector('#gleam-history-panel')!,
       imageInput: element.querySelector('#gleam-image-input') as HTMLInputElement,
       imagePreviewContainer: element.querySelector('#gleam-image-preview')!

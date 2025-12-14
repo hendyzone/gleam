@@ -36,5 +36,17 @@ export class StateManager {
     ChatUtils.scrollToBottom(this.messagesContainer);
     setTimeout(() => errorElement.remove(), 5000);
   }
+
+  /**
+   * 显示成功消息
+   */
+  showSuccess(message: string): void {
+    const successElement = document.createElement('div');
+    successElement.className = 'gleam-success';
+    successElement.textContent = message;
+    this.messagesContainer.appendChild(successElement);
+    ChatUtils.scrollToBottom(this.messagesContainer);
+    setTimeout(() => successElement.remove(), 3000);
+  }
 }
 

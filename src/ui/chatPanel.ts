@@ -13,6 +13,7 @@ import { AttachmentHandler } from './handlers/attachmentHandler';
 import { HistoryHandler } from './handlers/historyHandler';
 import { MessageSendHandler } from './handlers/messageSendHandler';
 import { RegenerateHandler } from './handlers/regenerateHandler';
+import { ExportHandler } from './handlers/exportHandler';
 import { MessageHelper } from './components/messageHelper';
 import { ChatUtils } from './utils/chatUtils';
 import { UIBuilder } from './builders/uiBuilder';
@@ -34,6 +35,7 @@ export class ChatPanel {
   private modelDialog!: ModelDialog; // 模型选择对话框
   private parametersPanel!: ParametersPanel; // 参数配置面板
   private parametersButton!: HTMLButtonElement; // 参数配置按钮
+  private exportButton!: HTMLButtonElement; // 导出按钮
   private contextToggle!: HTMLInputElement;
   private historyButton!: HTMLButtonElement;
   private newChatButton!: HTMLButtonElement;
@@ -55,6 +57,7 @@ export class ChatPanel {
   private historyHandler!: HistoryHandler;
   private messageSendHandler!: MessageSendHandler;
   private regenerateHandler!: RegenerateHandler;
+  private exportHandler!: ExportHandler;
   private eventManager!: EventManager;
   private configManager!: ConfigManager;
   private stateManager!: StateManager;
@@ -99,6 +102,7 @@ export class ChatPanel {
     this.historyButton = elements.historyButton;
     this.newChatButton = elements.newChatButton;
     this.parametersButton = elements.parametersButton;
+    this.exportButton = elements.exportButton;
     this.historyPanel = elements.historyPanel;
     this.imageInput = elements.imageInput;
     this.imagePreviewContainer = elements.imagePreviewContainer;
@@ -160,6 +164,7 @@ export class ChatPanel {
     this.stateManager = handlers.stateManager;
     this.parametersManager = handlers.parametersManager;
     this.chatManager = handlers.chatManager;
+    this.exportHandler = new ExportHandler(this.plugin);
     
     // 更新模型对话框引用
     this.configManager.setModelDialog(this.modelDialog);
@@ -205,6 +210,7 @@ export class ChatPanel {
       this.historyButton,
       this.newChatButton,
       this.parametersButton,
+      this.exportButton,
       this.storage,
       this.configHandler,
       this.attachmentHandler,
@@ -219,6 +225,7 @@ export class ChatPanel {
       () => this.chatManager.toggleHistory(),
       () => this.chatManager.newChat(),
       () => this.showParametersPanel(),
+      () => this.handleExport(),
       (msg) => this.stateManager.showError(msg)
     );
     
@@ -276,6 +283,33 @@ export class ChatPanel {
 
   async newChat() {
     await this.chatManager.newChat();
+  }
+
+  private async handleExport() {
+    if (this.currentMessages.length === 0) {
+      this.stateManager.showError(this.plugin.i18n.exportNoMessages || '没有可导出的消息');
+      return;
+    }
+
+    try {
+      await this.exportHandler.exportToDocument(this.currentMessages);
+      // 显示成功提示
+      this.stateManager.showSuccess(this.plugin.i18n.exportSuccess || '导出成功');
+      
+      // 同时尝试使用思源笔记的提示 API（如果可用）
+      if (this.plugin.addToast) {
+        try {
+          this.plugin.addToast({
+            msg: this.plugin.i18n.exportSuccess || '导出成功',
+            duration: 2000
+          });
+        } catch (e) {
+          // 如果 addToast 不可用，忽略错误
+        }
+      }
+    } catch (error: any) {
+      this.stateManager.showError(error.message || this.plugin.i18n.exportFailed || '导出失败');
+    }
   }
 }
 
