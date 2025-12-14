@@ -73,6 +73,7 @@ Click the parameters button (⚙️) to configure:
 - **History Management**: Click history button to view and manage past conversations
 - **New Chat**: Start a fresh conversation with the new chat button
 - **Regenerate**: Click regenerate button on any AI message to get a new response
+- **Text Selection**: Select and copy text directly from message bubbles (including tables and formatted content)
 - **Export to Document**: Click the export button (📄) to export the current conversation as a SiYuan document. Base64 images will be automatically converted to files
 
 ## Supported Models
