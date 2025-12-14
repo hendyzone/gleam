@@ -257,6 +257,11 @@ export class ChatPanel {
       }
     });
 
+    // 粘贴事件监听（支持粘贴图片）
+    this.textarea.addEventListener('paste', async (e) => {
+      await this.handlePaste(e);
+    });
+
     // 图片上传按钮
     const imageButton = this.element.querySelector('#gleam-image-button') as HTMLButtonElement;
     imageButton.addEventListener('click', () => {
@@ -405,6 +410,67 @@ export class ChatPanel {
       reader.onerror = reject;
       reader.readAsDataURL(file);
     });
+  }
+
+  /**
+   * 处理粘贴事件（支持粘贴图片）
+   */
+  private async handlePaste(e: ClipboardEvent) {
+    const clipboardData = e.clipboardData;
+    if (!clipboardData) return;
+
+    // 检查是否有图片
+    const items = clipboardData.items;
+    if (!items) return;
+
+    const imageFiles: File[] = [];
+    
+    // 遍历剪贴板项目
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      
+      // 检查是否是图片类型
+      if (item.type.indexOf('image') !== -1) {
+        const file = item.getAsFile();
+        if (file) {
+          imageFiles.push(file);
+        }
+      }
+    }
+
+    // 如果没有图片，允许默认粘贴行为（粘贴文本）
+    if (imageFiles.length === 0) {
+      return;
+    }
+
+    // 如果有图片，阻止默认粘贴行为
+    e.preventDefault();
+
+    // 检查当前模型是否支持图片
+    const config = await this.storage.getConfig();
+    const currentModelInfo = this.allModelsInfo.find(m => m.id === config.currentModel);
+    const supportedInputTypes = currentModelInfo?.inputModalities || ['text'];
+
+    if (!supportedInputTypes.includes('image')) {
+      this.showError('当前模型不支持图片类型的文件');
+      return;
+    }
+
+    // 处理图片文件
+    try {
+      const images = await ImageHandler.handleImageSelect(
+        { target: { files: imageFiles } } as any,
+        (msg) => this.showError(msg)
+      );
+      
+      if (images.length > 0) {
+        this.selectedImages.push(...images);
+        this.updateAttachmentPreview();
+      }
+    } catch (error: any) {
+      Logger.error('[ChatPanel] 粘贴图片处理失败:', error);
+      this.showError('粘贴图片失败');
+    }
   }
 
   /**
