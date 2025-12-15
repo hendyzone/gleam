@@ -1,6 +1,6 @@
 {
   "name": "gleam",
-  "version": "0.1.2",
+  "version": "0.1.4",
   "description": "AI chat assistant plugin for SiYuan",
   "main": ".src/index.js",
   "scripts": {
