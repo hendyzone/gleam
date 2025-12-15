@@ -245,7 +245,9 @@ export class MessageSendHandler {
           supportsImageOutput,
           async (text) => await ChatUtils.copyToClipboard(text),
           this.onRegenerate,
-          assistantMessageId
+          assistantMessageId,
+          (imageUrl) => ChatUtils.showImageZoom(imageUrl),
+          async (imageUrl) => await ChatUtils.copyImageToClipboard(imageUrl)
         );
         ChatUtils.scrollToBottom(this.messagesContainer);
       }

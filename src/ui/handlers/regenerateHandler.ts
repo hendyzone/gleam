@@ -276,7 +276,9 @@ export class RegenerateHandler {
           supportsImageOutput,
           async (text) => await ChatUtils.copyToClipboard(text),
           async (id) => await this.handleRegenerate(id),
-          messageId
+          messageId,
+          (imageUrl) => ChatUtils.showImageZoom(imageUrl),
+          async (imageUrl) => await ChatUtils.copyImageToClipboard(imageUrl)
         );
         ChatUtils.scrollToBottom(this.messagesContainer);
       }

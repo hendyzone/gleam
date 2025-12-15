@@ -164,7 +164,9 @@ export class MessageHelper {
     supportsImageOutput: boolean,
     onCopy?: (text: string) => Promise<void>,
     onRegenerate?: (messageId: string) => Promise<void>,
-    messageId?: string
+    messageId?: string,
+    onImageZoom?: (imageUrl: string) => void,
+    onImageCopy?: (imageUrl: string) => Promise<void>
   ): void {
     // 渲染内容（包括图片），流式生成时传递 isStreaming 参数
     const html = MessageRenderer.renderMessageContent(fullContent, imageUrls, supportsImageOutput, undefined, true);
@@ -173,7 +175,8 @@ export class MessageHelper {
     if (actionsContainer) {
       const actionsHtml = actionsContainer.outerHTML;
       contentElement.innerHTML = html + actionsHtml;
-      // 重新绑定按钮事件
+
+      // 重新绑定文本复制和重新生成按钮事件
       const copyBtn = contentElement.querySelector('.gleam-copy-button') as HTMLButtonElement;
       if (copyBtn && onCopy) {
         copyBtn.setAttribute('data-content', MarkdownRenderer.escapeHtml(fullContent));
@@ -193,6 +196,22 @@ export class MessageHelper {
     } else {
       contentElement.innerHTML = html;
     }
+
+    // 为图片操作按钮重新绑定事件（流式更新会替换图片区域）
+    const imageActionBtns = contentElement.querySelectorAll('.gleam-image-action-btn');
+    imageActionBtns.forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const action = (btn as HTMLElement).getAttribute('data-action');
+        const imageUrl = (btn as HTMLElement).getAttribute('data-image-url') || '';
+
+        if (action === 'zoom' && onImageZoom) {
+          onImageZoom(imageUrl);
+        } else if (action === 'copy' && onImageCopy) {
+          await onImageCopy(imageUrl);
+        }
+      });
+    });
   }
 }
 
