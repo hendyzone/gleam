@@ -1,13 +1,13 @@
-import { PluginData, PluginConfig, ChatHistory } from '../utils/types';
-import { Logger } from '../utils/logger';
+import { PluginData, PluginConfig, ChatHistory } from "../utils/types";
+import { Logger } from "../utils/logger";
 
-const DEFAULT_CONFIG: PluginData['config'] = {
+const DEFAULT_CONFIG: PluginData["config"] = {
   openrouter: {
-    apiKey: '',
-    baseURL: 'https://openrouter.ai/api/v1'
+    apiKey: "",
+    baseURL: "https://openrouter.ai/api/v1"
   },
-  currentProvider: 'openrouter',
-  currentModel: '',
+  currentProvider: "openrouter",
+  currentModel: "",
   enableContext: false,
   enableDebugLog: false,
   maxHistoryCount: 50 // 默认最大历史数量
@@ -22,7 +22,7 @@ export class DataStorage {
 
   async getData(): Promise<PluginData> {
     try {
-      const data = await this.plugin.loadData('data.json');
+      const data = await this.plugin.loadData("data.json");
       if (data) {
         return {
           config: { ...DEFAULT_CONFIG, ...data.config },
@@ -30,7 +30,7 @@ export class DataStorage {
         };
       }
     } catch (error) {
-      Logger.error('Failed to load plugin data:', error);
+      Logger.error("Failed to load plugin data:", error);
     }
     return {
       config: { ...DEFAULT_CONFIG },
@@ -40,19 +40,19 @@ export class DataStorage {
 
   async saveData(data: PluginData): Promise<void> {
     try {
-      await this.plugin.saveData('data.json', data);
+      await this.plugin.saveData("data.json", data);
     } catch (error) {
-      Logger.error('Failed to save plugin data:', error);
+      Logger.error("Failed to save plugin data:", error);
       throw error;
     }
   }
 
-  async getConfig(): Promise<PluginData['config']> {
+  async getConfig(): Promise<PluginData["config"]> {
     const data = await this.getData();
     return data.config;
   }
 
-  async saveConfig(config: PluginData['config']): Promise<void> {
+  async saveConfig(config: PluginData["config"]): Promise<void> {
     const data = await this.getData();
     data.config = config;
     await this.saveData(data);

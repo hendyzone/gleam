@@ -1,13 +1,13 @@
 import {
     Plugin
 } from "siyuan";
-import './index.scss';
-import { ChatPanel } from './ui/chatPanel';
-import { DataStorage } from './storage/data';
-import { Logger } from './utils/logger';
-import { OpenRouterProvider } from './api/openrouter';
-import { AIProvider } from './api/base';
-import { SettingsManager } from './settings/index';
+import "./index.scss";
+import { ChatPanel } from "./ui/chatPanel";
+import { DataStorage } from "./storage/data";
+import { Logger } from "./utils/logger";
+import { OpenRouterProvider } from "./api/openrouter";
+import { AIProvider } from "./api/base";
+import { SettingsManager } from "./settings/index";
 
  
 
@@ -27,7 +27,7 @@ export default class PluginGleam extends Plugin {
         console.log(this);
         this.storage = new DataStorage(this);
         this.providers = new Map<string, AIProvider>([
-            ['openrouter', new OpenRouterProvider()]
+            ["openrouter", new OpenRouterProvider()]
         ]);
         this.initSetting();
         this.initDock();
@@ -41,8 +41,8 @@ export default class PluginGleam extends Plugin {
 
 
     private initDock() {
-        const dockElement = document.createElement('div');
-        dockElement.className = 'fn__flex-1';
+        const dockElement = document.createElement("div");
+        dockElement.className = "fn__flex-1";
         this.dockElement = dockElement;
 
         this.chatPanel = new ChatPanel(this, dockElement);
@@ -53,29 +53,29 @@ export default class PluginGleam extends Plugin {
         if (plugin.addDock) {
             plugin.addDock({
                 config: {
-                    position: 'RightBottom',
+                    position: "RightBottom",
                     size: { width: 300, height: 400 },
-                    icon: 'iconSparkles',
-                    title: this.i18n?.pluginName || 'Gleam'
+                    icon: "iconSparkles",
+                    title: this.i18n?.pluginName || "Gleam"
                 },
                 data: {
-                    text: ''
+                    text: ""
                 },
-                type: 'dock',
+                type: "dock",
                 init() {
-                    this.element.innerHTML = '';
+                    this.element.innerHTML = "";
                     this.element.appendChild(dockElement);
                     // 确保容器有高度
                     if (this.element) {
-                        this.element.style.height = '100%';
-                        this.element.style.display = 'flex';
-                        this.element.style.flexDirection = 'column';
+                        this.element.style.height = "100%";
+                        this.element.style.display = "flex";
+                        this.element.style.flexDirection = "column";
                     }
                 },
                 resize() {
                     // 当 dock 大小改变时，确保容器高度正确
                     if (this.element && dockElement) {
-                        this.element.style.height = '100%';
+                        this.element.style.height = "100%";
                     }
                 },
                 destroy() {
@@ -83,7 +83,7 @@ export default class PluginGleam extends Plugin {
                 }
             });
         } else {
-            Logger.error('addDock API not available');
+            Logger.error("addDock API not available");
         }
     }
 }

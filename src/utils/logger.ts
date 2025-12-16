@@ -10,7 +10,7 @@ export class Logger {
   static async updateEnabled() {
     if (!Logger.plugin) return;
     try {
-      const storage = (await import('../storage/data')).DataStorage;
+      const storage = (await import("../storage/data")).DataStorage;
       const dataStorage = new storage(Logger.plugin);
       const config = await dataStorage.getConfig();
       Logger.enabled = config.enableDebugLog || false;

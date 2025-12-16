@@ -1,18 +1,18 @@
-import { ConfigHandler } from '../handlers/configHandler';
-import { AttachmentHandler } from '../handlers/attachmentHandler';
-import { HistoryHandler } from '../handlers/historyHandler';
-import { MessageSendHandler } from '../handlers/messageSendHandler';
-import { RegenerateHandler } from '../handlers/regenerateHandler';
-import { ConfigManager } from '../managers/configManager';
-import { StateManager } from '../managers/stateManager';
-import { ParametersManager } from '../managers/parametersManager';
-import { ChatManager } from '../managers/chatManager';
-import { DataStorage } from '../../storage/data';
-import { ContextInjector } from '../../features/context-injection';
-import { AIProvider } from '../../api/base';
-import { ChatMessage } from '../../utils/types';
-import { ModelDialog } from '../components/modelDialog';
-import { ParametersPanel } from '../components/parametersPanel';
+import { AttachmentHandler } from "../handlers/attachmentHandler";
+import { HistoryHandler } from "../handlers/historyHandler";
+import { MessageSendHandler } from "../handlers/messageSendHandler";
+import { RegenerateHandler } from "../handlers/regenerateHandler";
+import { StateManager } from "../managers/stateManager";
+import { ParametersManager } from "../managers/parametersManager";
+import { ChatManager } from "../managers/chatManager";
+import { DataStorage } from "../../storage/data";
+import { ContextInjector } from "../../features/context-injection";
+import { AIProvider } from "../../api/base";
+import { AIMessageService } from "../../services/AIMessageService";
+import { ConfigService } from "../../services/ConfigService";
+import { ChatMessage } from "../../utils/types";
+import { ModelDialog } from "../components/modelDialog";
+import { ParametersPanel } from "../components/parametersPanel";
 
 /**
  * 面板初始化器
@@ -42,65 +42,62 @@ export class PanelInitializer {
     modelDialog: ModelDialog,
     parametersPanel: ParametersPanel,
     onError: (message: string) => void,
-    onAddMessage: (role: 'user' | 'assistant', content: string, images?: string[], audio?: Array<{ data: string; format: string }>) => Promise<string>,
+    onAddMessage: (role: "user" | "assistant", content: string, images?: string[], audio?: Array<{ data: string; format: string }>) => Promise<string>,
     onRegenerate: (messageId: string) => Promise<void>
   ): {
-    configHandler: ConfigHandler;
+    configService: ConfigService;
     attachmentHandler: AttachmentHandler;
     historyHandler: HistoryHandler;
     messageSendHandler: MessageSendHandler;
     regenerateHandler: RegenerateHandler;
-    configManager: ConfigManager;
     stateManager: StateManager;
     parametersManager: ParametersManager;
     chatManager: ChatManager;
   } {
-    const configHandler = new ConfigHandler(
+    // 创建 AIMessageService（统一的AI请求服务）
+    const aiMessageService = new AIMessageService(
+      storage,
+      contextInjector,
+      providers,
+      plugin
+    );
+
+    // 创建 ConfigService（统一的配置服务）
+    const configService = new ConfigService(
       storage,
       providers,
       plugin,
       allModels,
       allModelsInfo
     );
-    
+    configService.setModelDialog(modelDialog);
+
     const attachmentHandler = new AttachmentHandler(
       imagePreviewContainer,
       onError
     );
-    
+
     const historyHandler = new HistoryHandler(
       storage,
       historyPanel,
       plugin
     );
-    
+
     const stateManager = new StateManager(
       messagesContainer,
       plugin
     );
-    
-    const configManager = new ConfigManager(
-      storage,
-      configHandler,
-      modelSelect,
-      modelButton,
-      contextToggle,
-      plugin,
-      onError
-    );
-    configManager.setModelDialog(modelDialog);
-    
+
     const parametersManager = new ParametersManager(
       storage,
-      configHandler,
+      configService,
       parametersPanel
     );
-    
+
     const messageSendHandler = new MessageSendHandler(
       storage,
-      contextInjector,
-      providers,
-      configHandler,
+      aiMessageService,
+      configService,
       attachmentHandler,
       historyHandler,
       plugin,
@@ -114,12 +111,11 @@ export class PanelInitializer {
       onAddMessage,
       onRegenerate
     );
-    
+
     const regenerateHandler = new RegenerateHandler(
       storage,
-      contextInjector,
-      providers,
-      configHandler,
+      aiMessageService,
+      configService,
       historyHandler,
       plugin,
       messagesContainer,
@@ -131,13 +127,12 @@ export class PanelInitializer {
       onError,
       onAddMessage
     );
-    
+
     const chatManager = new ChatManager(
       storage,
       historyHandler,
       attachmentHandler,
-      configManager,
-      configHandler,
+      configService,
       stateManager,
       messagesContainer,
       modelSelect,
@@ -145,14 +140,13 @@ export class PanelInitializer {
       hasContextInjected,
       onAddMessage
     );
-    
+
     return {
-      configHandler,
+      configService,
       attachmentHandler,
       historyHandler,
       messageSendHandler,
       regenerateHandler,
-      configManager,
       stateManager,
       parametersManager,
       chatManager

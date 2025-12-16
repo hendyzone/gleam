@@ -1,7 +1,7 @@
-import { ImageHandler } from '../components/imageHandler';
-import { AudioHandler } from '../components/audioHandler';
-import { ChatUtils } from '../utils/chatUtils';
-import { Logger } from '../../utils/logger';
+import { ImageHandler } from "../components/imageHandler";
+import { AudioHandler } from "../components/audioHandler";
+import { ChatUtils } from "../utils/chatUtils";
+import { Logger } from "../../utils/logger";
 
 /**
  * 附件处理处理器
@@ -58,9 +58,9 @@ export class AttachmentHandler {
       const fileType = ChatUtils.getFileTypeFromExtension(file.name);
       
       // 处理图片文件
-      if (fileType === 'image') {
-        if (!supportedInputTypes.includes('image')) {
-          this.onError('当前模型不支持图片类型的文件');
+      if (fileType === "image") {
+        if (!supportedInputTypes.includes("image")) {
+          this.onError("当前模型不支持图片类型的文件");
           continue;
         }
         imageFiles.push(file);
@@ -68,9 +68,9 @@ export class AttachmentHandler {
       }
       
       // 处理音频文件
-      if (fileType === 'audio') {
-        if (!supportedInputTypes.includes('audio')) {
-          this.onError('当前模型不支持音频类型的文件');
+      if (fileType === "audio") {
+        if (!supportedInputTypes.includes("audio")) {
+          this.onError("当前模型不支持音频类型的文件");
           continue;
         }
         audioFiles.push(file);
@@ -129,7 +129,7 @@ export class AttachmentHandler {
       const item = items[i];
       
       // 检查是否是图片类型
-      if (item.type.indexOf('image') !== -1) {
+      if (item.type.indexOf("image") !== -1) {
         const file = item.getAsFile();
         if (file) {
           imageFiles.push(file);
@@ -145,8 +145,8 @@ export class AttachmentHandler {
     // 如果有图片，阻止默认粘贴行为
     e.preventDefault();
 
-    if (!supportedInputTypes.includes('image')) {
-      this.onError('当前模型不支持图片类型的文件');
+    if (!supportedInputTypes.includes("image")) {
+      this.onError("当前模型不支持图片类型的文件");
       return true;
     }
 
@@ -162,8 +162,8 @@ export class AttachmentHandler {
         this.updatePreview();
       }
     } catch (error: any) {
-      Logger.error('[AttachmentHandler] 粘贴图片处理失败:', error);
-      this.onError('粘贴图片失败');
+      Logger.error("[AttachmentHandler] 粘贴图片处理失败:", error);
+      this.onError("粘贴图片失败");
     }
 
     return true;
@@ -176,13 +176,13 @@ export class AttachmentHandler {
     const hasAttachments = this.selectedImages.length > 0 || this.selectedAudio.length > 0;
     
     if (!hasAttachments) {
-      this.imagePreviewContainer.innerHTML = '';
-      this.imagePreviewContainer.classList.remove('show');
+      this.imagePreviewContainer.innerHTML = "";
+      this.imagePreviewContainer.classList.remove("show");
       return;
     }
 
-    this.imagePreviewContainer.classList.add('show');
-    let html = '';
+    this.imagePreviewContainer.classList.add("show");
+    let html = "";
 
     // 渲染图片
     if (this.selectedImages.length > 0) {
@@ -191,7 +191,7 @@ export class AttachmentHandler {
           <img src="${ChatUtils.escapeHtml(image)}" alt="Preview ${index + 1}">
           <button class="gleam-image-preview-remove" data-type="image" data-index="${index}" title="删除">×</button>
         </div>
-      `).join('');
+      `).join("");
     }
 
     // 渲染音频
@@ -206,20 +206,20 @@ export class AttachmentHandler {
           <button class="gleam-image-preview-remove" data-type="audio" data-index="${index}" title="删除">×</button>
         </div>
       `;
-      }).join('');
+      }).join("");
     }
 
     this.imagePreviewContainer.innerHTML = html;
 
     // 添加删除按钮事件
-    this.imagePreviewContainer.querySelectorAll('.gleam-image-preview-remove').forEach(btn => {
-      btn.addEventListener('click', (e) => {
+    this.imagePreviewContainer.querySelectorAll(".gleam-image-preview-remove").forEach(btn => {
+      btn.addEventListener("click", (e) => {
         const element = e.target as HTMLElement;
-        const type = element.getAttribute('data-type');
-        const index = parseInt(element.getAttribute('data-index') || '0');
-        if (type === 'image') {
+        const type = element.getAttribute("data-type");
+        const index = parseInt(element.getAttribute("data-index") || "0");
+        if (type === "image") {
           this.selectedImages.splice(index, 1);
-        } else if (type === 'audio') {
+        } else if (type === "audio") {
           this.selectedAudio.splice(index, 1);
         }
         this.updatePreview();

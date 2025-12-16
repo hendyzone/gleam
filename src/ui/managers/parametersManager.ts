@@ -1,7 +1,7 @@
-import { DataStorage } from '../../storage/data';
-import { ModelParameters } from '../../utils/types';
-import { ConfigHandler } from '../handlers/configHandler';
-import { ParametersPanel } from '../components/parametersPanel';
+import { DataStorage } from "../../storage/data";
+import { ModelParameters } from "../../utils/types";
+import { ConfigService } from "../../services/ConfigService";
+import { ParametersPanel } from "../components/parametersPanel";
 
 /**
  * 参数管理器
@@ -9,7 +9,7 @@ import { ParametersPanel } from '../components/parametersPanel';
 export class ParametersManager {
   constructor(
     private storage: DataStorage,
-    private configHandler: ConfigHandler,
+    private configService: ConfigService,
     private parametersPanel: ParametersPanel
   ) {}
 
@@ -18,10 +18,10 @@ export class ParametersManager {
    */
   async showParametersPanel(): Promise<void> {
     const config = await this.storage.getConfig();
-    const currentModelInfo = this.configHandler.getModelInfo(config.currentModel);
+    const currentModelInfo = this.configService.getModelInfo(config.currentModel);
     const modelParameters = config.modelParameters || {};
     const currentParameters = modelParameters[config.currentModel] || {};
-    
+
     this.parametersPanel.show(currentModelInfo || null, currentParameters);
   }
 

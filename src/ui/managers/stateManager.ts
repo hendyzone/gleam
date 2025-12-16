@@ -1,5 +1,5 @@
-import { ChatMessage } from '../../utils/types';
-import { ChatUtils } from '../utils/chatUtils';
+import { ChatMessage } from "../../utils/types";
+import { ChatUtils } from "../utils/chatUtils";
 
 /**
  * 状态管理器
@@ -18,8 +18,8 @@ export class StateManager {
       this.messagesContainer.innerHTML = `
         <div class="gleam-empty-state">
           <div class="gleam-empty-icon">💬</div>
-          <div class="gleam-empty-title">${this.plugin.i18n.emptyTitle || '开始新的对话'}</div>
-          <div class="gleam-empty-description">${this.plugin.i18n.emptyDescription || '在下方输入框中输入消息，开始与 AI 对话'}</div>
+          <div class="gleam-empty-title">${this.plugin.i18n.emptyTitle || "开始新的对话"}</div>
+          <div class="gleam-empty-description">${this.plugin.i18n.emptyDescription || "在下方输入框中输入消息，开始与 AI 对话"}</div>
         </div>
       `;
     }
@@ -29,8 +29,8 @@ export class StateManager {
    * 显示错误消息
    */
   showError(message: string): void {
-    const errorElement = document.createElement('div');
-    errorElement.className = 'gleam-error';
+    const errorElement = document.createElement("div");
+    errorElement.className = "gleam-error";
     errorElement.textContent = message;
     this.messagesContainer.appendChild(errorElement);
     ChatUtils.scrollToBottom(this.messagesContainer);
@@ -41,8 +41,8 @@ export class StateManager {
    * 显示成功消息
    */
   showSuccess(message: string): void {
-    const successElement = document.createElement('div');
-    successElement.className = 'gleam-success';
+    const successElement = document.createElement("div");
+    successElement.className = "gleam-success";
     successElement.textContent = message;
     this.messagesContainer.appendChild(successElement);
     ChatUtils.scrollToBottom(this.messagesContainer);

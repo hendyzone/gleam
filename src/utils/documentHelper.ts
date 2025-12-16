@@ -1,4 +1,4 @@
-import { Logger } from './logger';
+import { Logger } from "./logger";
 
 export interface BlockInfo {
   id: string;
@@ -28,8 +28,8 @@ export class DocumentHelper {
   getSelectedBlockId(): string {
     const selection = window.getSelection();
     if (!selection || selection.rangeCount === 0) {
-      Logger.log('[DocumentHelper] 没有选中内容');
-      return '';
+      Logger.log("[DocumentHelper] 没有选中内容");
+      return "";
     }
 
     const range = selection.getRangeAt(0);
@@ -37,17 +37,17 @@ export class DocumentHelper {
     
     // 查找包含选中内容的块元素
     const blockElement = container.nodeType === Node.ELEMENT_NODE
-      ? (container as Element).closest('[data-node-id]')
-      : (container as Node).parentElement?.closest('[data-node-id]');
+      ? (container as Element).closest("[data-node-id]")
+      : (container as Node).parentElement?.closest("[data-node-id]");
 
     if (blockElement) {
-      const blockId = blockElement.getAttribute('data-node-id') || '';
-      Logger.log('[DocumentHelper] 从选中内容获取块ID:', blockId);
+      const blockId = blockElement.getAttribute("data-node-id") || "";
+      Logger.log("[DocumentHelper] 从选中内容获取块ID:", blockId);
       return blockId;
     }
 
-    Logger.warn('[DocumentHelper] 未找到选中块的ID');
-    return '';
+    Logger.warn("[DocumentHelper] 未找到选中块的ID");
+    return "";
   }
 
 
@@ -60,10 +60,10 @@ export class DocumentHelper {
     }
 
     try {
-      const response = await fetch('/api/block/getBlockInfo', {
-        method: 'POST',
+      const response = await fetch("/api/block/getBlockInfo", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json'
+          "Content-Type": "application/json"
         },
         body: JSON.stringify({
           id: blockId
@@ -71,16 +71,16 @@ export class DocumentHelper {
       });
 
       if (!response.ok) {
-        Logger.warn('[DocumentHelper] API调用失败, status:', response.status, response.statusText);
+        Logger.warn("[DocumentHelper] API调用失败, status:", response.status, response.statusText);
         return null;
       }
 
       const data = await response.json();
-      Logger.log('[DocumentHelper] API响应:', data);
+      Logger.log("[DocumentHelper] API响应:", data);
       
       return data.data || null;
     } catch (error) {
-      Logger.error('[DocumentHelper] 获取块信息失败:', error);
+      Logger.error("[DocumentHelper] 获取块信息失败:", error);
       return null;
     }
   }
@@ -91,7 +91,7 @@ export class DocumentHelper {
   async getBlockContent(blockId: string): Promise<string> {
     const blockInfo = await this.getBlockInfo(blockId);
     if (!blockInfo?.content) {
-      return '';
+      return "";
     }
 
     return this.extractTextFromContent(blockInfo.content);
@@ -103,7 +103,7 @@ export class DocumentHelper {
   async getSelectedBlockContent(): Promise<string> {
     const blockId = this.getSelectedBlockId();
     if (!blockId) {
-      return '';
+      return "";
     }
 
     return await this.getBlockContent(blockId);
@@ -118,10 +118,10 @@ export class DocumentHelper {
     }
 
     try {
-      const response = await fetch('/api/filetree/getDoc', {
-        method: 'POST',
+      const response = await fetch("/api/filetree/getDoc", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json'
+          "Content-Type": "application/json"
         },
         body: JSON.stringify({
           id: blockId
@@ -134,7 +134,7 @@ export class DocumentHelper {
 
       return await response.json();
     } catch (error) {
-      Logger.error('[DocumentHelper] 获取文档树失败:', error);
+      Logger.error("[DocumentHelper] 获取文档树失败:", error);
       return null;
     }
   }
@@ -145,11 +145,11 @@ export class DocumentHelper {
   extractTextFromContent(content: string): string {
     try {
       const parser = new DOMParser();
-      const doc = parser.parseFromString(content, 'text/html');
-      const text = doc.body.textContent || '';
+      const doc = parser.parseFromString(content, "text/html");
+      const text = doc.body.textContent || "";
       return text.trim();
     } catch (error) {
-      Logger.warn('[DocumentHelper] 文本提取失败，返回原始内容');
+      Logger.warn("[DocumentHelper] 文本提取失败，返回原始内容");
       return content;
     }
   }
@@ -160,7 +160,7 @@ export class DocumentHelper {
   getSelectedText(): string {
     const selection = window.getSelection();
     if (!selection || selection.rangeCount === 0) {
-      return '';
+      return "";
     }
 
     return selection.toString().trim();

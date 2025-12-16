@@ -1,28 +1,27 @@
-import { ChatMessage, ModelInfo, ModelParameters } from '../utils/types';
-import { DataStorage } from '../storage/data';
-import { ContextInjector } from '../features/context-injection';
-import { OpenRouterProvider } from '../api/openrouter';
-import { AIProvider } from '../api/base';
-import { Logger } from '../utils/logger';
-import { MarkdownRenderer } from './utils/markdown';
-import { MessageRenderer } from './components/messageRenderer';
-import { ModelDialog } from './components/modelDialog';
-import { ParametersPanel } from './components/parametersPanel';
-import { ConfigHandler } from './handlers/configHandler';
-import { AttachmentHandler } from './handlers/attachmentHandler';
-import { HistoryHandler } from './handlers/historyHandler';
-import { MessageSendHandler } from './handlers/messageSendHandler';
-import { RegenerateHandler } from './handlers/regenerateHandler';
-import { ExportHandler } from './handlers/exportHandler';
-import { MessageHelper } from './components/messageHelper';
-import { ChatUtils } from './utils/chatUtils';
-import { UIBuilder } from './builders/uiBuilder';
-import { EventManager } from './managers/eventManager';
-import { ConfigManager } from './managers/configManager';
-import { StateManager } from './managers/stateManager';
-import { ParametersManager } from './managers/parametersManager';
-import { ChatManager } from './managers/chatManager';
-import { PanelInitializer } from './builders/panelInitializer';
+import { ChatMessage, ModelInfo, ModelParameters } from "../utils/types";
+import { DataStorage } from "../storage/data";
+import { ContextInjector } from "../features/context-injection";
+import { OpenRouterProvider } from "../api/openrouter";
+import { AIProvider } from "../api/base";
+import { Logger } from "../utils/logger";
+import { MarkdownRenderer } from "./utils/markdown";
+import { MessageRenderer } from "./components/messageRenderer";
+import { ModelDialog } from "./components/modelDialog";
+import { ParametersPanel } from "./components/parametersPanel";
+import { ConfigService } from "../services/ConfigService";
+import { AttachmentHandler } from "./handlers/attachmentHandler";
+import { HistoryHandler } from "./handlers/historyHandler";
+import { MessageSendHandler } from "./handlers/messageSendHandler";
+import { RegenerateHandler } from "./handlers/regenerateHandler";
+import { ExportHandler } from "./handlers/exportHandler";
+import { MessageHelper } from "./components/messageHelper";
+import { ChatUtils } from "./utils/chatUtils";
+import { UIBuilder } from "./builders/uiBuilder";
+import { EventManager } from "./managers/eventManager";
+import { StateManager } from "./managers/stateManager";
+import { ParametersManager } from "./managers/parametersManager";
+import { ChatManager } from "./managers/chatManager";
+import { PanelInitializer } from "./builders/panelInitializer";
 
 export class ChatPanel {
   private element: HTMLElement;
@@ -50,16 +49,15 @@ export class ChatPanel {
   private currentMessages: ChatMessage[] = [];
   private isLoading = { value: false };
   private hasContextInjected = { value: false }; // 标记是否已经注入过上下文
-  
+
   // 处理器
-  private configHandler!: ConfigHandler;
+  private configService!: ConfigService;
   private attachmentHandler!: AttachmentHandler;
   private historyHandler!: HistoryHandler;
   private messageSendHandler!: MessageSendHandler;
   private regenerateHandler!: RegenerateHandler;
   private exportHandler!: ExportHandler;
   private eventManager!: EventManager;
-  private configManager!: ConfigManager;
   private stateManager!: StateManager;
   private parametersManager!: ParametersManager;
   private chatManager!: ChatManager;
@@ -74,7 +72,7 @@ export class ChatPanel {
     this.storage = new DataStorage(plugin);
     this.contextInjector = new ContextInjector(plugin);
     this.providers = new Map<string, AIProvider>([
-      ['openrouter', new OpenRouterProvider()]
+      ["openrouter", new OpenRouterProvider()]
     ]);
 
     this.init();
@@ -112,10 +110,10 @@ export class ChatPanel {
       this.plugin,
       (modelId: string) => {
         this.modelSelect.value = modelId;
-        // 延迟设置，因为 configManager 在后面初始化
-        if (this.configManager) {
-          this.configManager.updateModelButtonText(modelId);
-          this.configManager.saveConfig();
+        // 延迟设置，因为 configService 在后面初始化
+        if (this.configService) {
+          this.configService.updateModelButtonText(this.modelButton, modelId);
+          this.configService.saveConfig(this.modelSelect, this.contextToggle);
         }
       }
     );
@@ -155,33 +153,32 @@ export class ChatPanel {
       (id) => this.handleRegenerate(id)
     );
     
-    this.configHandler = handlers.configHandler;
+    this.configService = handlers.configService;
     this.attachmentHandler = handlers.attachmentHandler;
     this.historyHandler = handlers.historyHandler;
     this.messageSendHandler = handlers.messageSendHandler;
     this.regenerateHandler = handlers.regenerateHandler;
-    this.configManager = handlers.configManager;
     this.stateManager = handlers.stateManager;
     this.parametersManager = handlers.parametersManager;
     this.chatManager = handlers.chatManager;
     this.exportHandler = new ExportHandler(this.plugin);
-    
+
     // 更新模型对话框引用
-    this.configManager.setModelDialog(this.modelDialog);
+    this.configService.setModelDialog(this.modelDialog);
     
     this.stateManager.updateEmptyState(this.currentMessages);
   }
 
   private async loadConfig() {
-    await this.configManager.loadConfig();
+    await this.configService.loadConfig(this.contextToggle, this.modelSelect, this.modelButton);
   }
 
   private async showModelDialog() {
-    await this.configManager.showModelDialog();
+    await this.configService.showModelDialog(this.modelSelect, (msg) => this.stateManager.showError(msg));
   }
 
   private updateModelButtonText(value: string) {
-    this.configManager.updateModelButtonText(value);
+    this.configService.updateModelButtonText(this.modelButton, value);
   }
 
   private async loadHistory() {
@@ -196,7 +193,7 @@ export class ChatPanel {
   }
 
   private attachEventListeners() {
-    const imageButton = this.element.querySelector('#gleam-image-button') as HTMLButtonElement;
+    const imageButton = this.element.querySelector("#gleam-image-button") as HTMLButtonElement;
     
     this.eventManager = new EventManager(
       this.element,
@@ -212,16 +209,16 @@ export class ChatPanel {
       this.parametersButton,
       this.exportButton,
       this.storage,
-      this.configHandler,
+      this.configService,
       this.attachmentHandler,
       this.plugin,
       () => this.messageSendHandler.handleSend(),
-      () => this.configManager.showModelDialog(),
+      () => this.showModelDialog(),
       async () => {
-        this.configManager.updateModelButtonText(this.modelSelect.value);
-        await this.configManager.saveConfig();
+        this.configService.updateModelButtonText(this.modelButton, this.modelSelect.value);
+        await this.configService.saveConfig(this.modelSelect, this.contextToggle);
       },
-      async () => await this.configManager.saveConfig(),
+      async () => await this.configService.saveConfig(this.modelSelect, this.contextToggle),
       () => this.chatManager.toggleHistory(),
       () => this.chatManager.newChat(),
       () => this.showParametersPanel(),
@@ -245,13 +242,13 @@ export class ChatPanel {
   }
 
   private async addMessage(
-    role: 'user' | 'assistant', 
+    role: "user" | "assistant", 
     content: string, 
     images?: string[], 
     audio?: Array<{ data: string; format: string }>
   ): Promise<string> {
-    if (this.messagesContainer.querySelector('.gleam-empty-state')) {
-      this.messagesContainer.innerHTML = '';
+    if (this.messagesContainer.querySelector(".gleam-empty-state")) {
+      this.messagesContainer.innerHTML = "";
     }
     
     return await MessageHelper.addMessage(
@@ -267,7 +264,7 @@ export class ChatPanel {
       (imageUrl) => ChatUtils.showImageZoom(imageUrl),
       async (imageUrl) => await ChatUtils.copyImageToClipboard(imageUrl),
       this.storage,
-      this.configHandler
+      this.configService
     );
   }
 
@@ -287,20 +284,20 @@ export class ChatPanel {
 
   private async handleExport() {
     if (this.currentMessages.length === 0) {
-      this.stateManager.showError(this.plugin.i18n.exportNoMessages || '没有可导出的消息');
+      this.stateManager.showError(this.plugin.i18n.exportNoMessages || "没有可导出的消息");
       return;
     }
 
     try {
       await this.exportHandler.exportToDocument(this.currentMessages);
       // 显示成功提示
-      this.stateManager.showSuccess(this.plugin.i18n.exportSuccess || '导出成功');
+      this.stateManager.showSuccess(this.plugin.i18n.exportSuccess || "导出成功");
       
       // 同时尝试使用思源笔记的提示 API（如果可用）
       if (this.plugin.addToast) {
         try {
           this.plugin.addToast({
-            msg: this.plugin.i18n.exportSuccess || '导出成功',
+            msg: this.plugin.i18n.exportSuccess || "导出成功",
             duration: 2000
           });
         } catch (e) {
@@ -308,7 +305,7 @@ export class ChatPanel {
         }
       }
     } catch (error: any) {
-      this.stateManager.showError(error.message || this.plugin.i18n.exportFailed || '导出失败');
+      this.stateManager.showError(error.message || this.plugin.i18n.exportFailed || "导出失败");
     }
   }
 }

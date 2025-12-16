@@ -1,4 +1,4 @@
-export type Provider = 'openrouter';
+export type Provider = "openrouter";
 
 export interface ProviderConfig {
   apiKey: string;
@@ -16,7 +16,7 @@ export interface PluginConfig {
 }
 
 export interface ChatMessage {
-  role: 'user' | 'assistant' | 'system';
+  role: "user" | "assistant" | "system";
   content: string;
   images?: string[]; // 图片 URL 或 base64 数据
   audio?: Array<{ data: string; format: string }>; // 音频数据（base64）和格式
@@ -51,29 +51,29 @@ export interface AIResponse {
 }
 
 export type SupportedParameter = 
-  | 'temperature'
-  | 'top_p'
-  | 'top_k'
-  | 'min_p'
-  | 'top_a'
-  | 'frequency_penalty'
-  | 'presence_penalty'
-  | 'repetition_penalty'
-  | 'max_tokens'
-  | 'logit_bias'
-  | 'logprobs'
-  | 'top_logprobs'
-  | 'seed'
-  | 'response_format'
-  | 'structured_outputs'
-  | 'stop'
-  | 'tools'
-  | 'tool_choice'
-  | 'parallel_tool_calls'
-  | 'include_reasoning'
-  | 'reasoning'
-  | 'web_search_options'
-  | 'verbosity';
+  | "temperature"
+  | "top_p"
+  | "top_k"
+  | "min_p"
+  | "top_a"
+  | "frequency_penalty"
+  | "presence_penalty"
+  | "repetition_penalty"
+  | "max_tokens"
+  | "logit_bias"
+  | "logprobs"
+  | "top_logprobs"
+  | "seed"
+  | "response_format"
+  | "structured_outputs"
+  | "stop"
+  | "tools"
+  | "tool_choice"
+  | "parallel_tool_calls"
+  | "include_reasoning"
+  | "reasoning"
+  | "web_search_options"
+  | "verbosity";
 
 export interface ModelInfo {
   id: string;

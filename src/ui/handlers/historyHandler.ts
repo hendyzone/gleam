@@ -1,6 +1,6 @@
-import { DataStorage } from '../../storage/data';
-import { HistoryManager } from '../components/historyManager';
-import { ChatMessage } from '../../utils/types';
+import { DataStorage } from "../../storage/data";
+import { HistoryManager } from "../components/historyManager";
+import { ChatMessage } from "../../utils/types";
 
 /**
  * 历史记录处理处理器
@@ -50,7 +50,7 @@ export class HistoryHandler {
     const history = await this.storage.getHistory();
     const item = history.find(h => h.id === id);
     if (!item) {
-      throw new Error('历史记录项不存在');
+      throw new Error("历史记录项不存在");
     }
 
     const messages = [...item.messages];
@@ -72,7 +72,7 @@ export class HistoryHandler {
   async saveCurrentChat(messages: ChatMessage[]): Promise<void> {
     if (messages.length === 0) return;
 
-    const title = messages[0]?.content?.substring(0, 50) || 'New Chat';
+    const title = messages[0]?.content?.substring(0, 50) || "New Chat";
     const historyItem = {
       id: `chat-${Date.now()}`,
       title,
@@ -87,14 +87,14 @@ export class HistoryHandler {
    * 切换历史面板显示
    */
   toggleHistory(): void {
-    this.historyPanel.classList.toggle('show');
+    this.historyPanel.classList.toggle("show");
   }
 
   /**
    * 检查历史面板是否显示
    */
   isHistoryVisible(): boolean {
-    return this.historyPanel.classList.contains('show');
+    return this.historyPanel.classList.contains("show");
   }
 
   /**

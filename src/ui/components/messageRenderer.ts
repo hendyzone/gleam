@@ -1,4 +1,4 @@
-import { MarkdownRenderer } from '../utils/markdown';
+import { MarkdownRenderer } from "../utils/markdown";
 
 /**
  * 消息渲染工具类
@@ -14,7 +14,7 @@ export class MessageRenderer {
     audio?: Array<{ data: string; format: string }>,
     isStreaming?: boolean
   ): string {
-    let html = '';
+    let html = "";
     
     // 如果有图片，先渲染图片
     if (images && images.length > 0) {

@@ -1,7 +1,7 @@
-import { Setting } from 'siyuan';
-import { DataStorage } from '../storage/data';
-import { Logger } from '../utils/logger';
-import { AIProvider } from '../api/base';
+import { Setting } from "siyuan";
+import { DataStorage } from "../storage/data";
+import { Logger } from "../utils/logger";
+import { AIProvider } from "../api/base";
 
 /**
  * 设置管理类
@@ -49,21 +49,21 @@ export class SettingsManager {
       direction: "row",
       description: this.plugin.i18n.openrouterApiKey,
       createActionElement: () => {
-        const input = document.createElement('input');
-        input.type = 'password';
-        input.className = 'b3-text-field fn__flex-1';
-        input.placeholder = 'sk-...';
+        const input = document.createElement("input");
+        input.type = "password";
+        input.className = "b3-text-field fn__flex-1";
+        input.placeholder = "sk-...";
         
         if (!this.plugin.data) {
           this.plugin.data = {};
         }
         
         this.storage.getConfig().then(config => {
-          input.value = config.openrouter.apiKey || '';
+          input.value = config.openrouter.apiKey || "";
           this.plugin.data.openrouterApiKey = input.value;
         });
 
-        input.addEventListener('input', () => {
+        input.addEventListener("input", () => {
           this.plugin.data.openrouterApiKey = input.value;
         });
 
@@ -77,13 +77,13 @@ export class SettingsManager {
    */
   private addDebugLog(): void {
     this.setting.addItem({
-      title: this.plugin.i18n.enableDebugLog || '启用调试日志',
+      title: this.plugin.i18n.enableDebugLog || "启用调试日志",
       direction: "row",
-      description: this.plugin.i18n.enableDebugLog || '启用调试日志',
+      description: this.plugin.i18n.enableDebugLog || "启用调试日志",
       createActionElement: () => {
-        const checkbox = document.createElement('input');
-        checkbox.type = 'checkbox';
-        checkbox.className = 'b3-switch';
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.className = "b3-switch";
         
         if (!this.plugin.data) {
           this.plugin.data = {};
@@ -94,7 +94,7 @@ export class SettingsManager {
           this.plugin.data.enableDebugLog = checkbox.checked;
         });
 
-        checkbox.addEventListener('change', () => {
+        checkbox.addEventListener("change", () => {
           this.plugin.data.enableDebugLog = checkbox.checked;
         });
 
@@ -108,16 +108,16 @@ export class SettingsManager {
    */
   private addMaxHistoryCount(): void {
     this.setting.addItem({
-      title: this.plugin.i18n.maxHistoryCount || '最大历史数量',
+      title: this.plugin.i18n.maxHistoryCount || "最大历史数量",
       direction: "row",
-      description: this.plugin.i18n.maxHistoryCountDesc || '超过此数量的未收藏历史记录将被自动删除',
+      description: this.plugin.i18n.maxHistoryCountDesc || "超过此数量的未收藏历史记录将被自动删除",
       createActionElement: () => {
-        const input = document.createElement('input');
-        input.type = 'number';
-        input.className = 'b3-text-field fn__flex-1';
-        input.placeholder = '50';
-        input.min = '1';
-        input.max = '1000';
+        const input = document.createElement("input");
+        input.type = "number";
+        input.className = "b3-text-field fn__flex-1";
+        input.placeholder = "50";
+        input.min = "1";
+        input.max = "1000";
         
         if (!this.plugin.data) {
           this.plugin.data = {};
@@ -128,7 +128,7 @@ export class SettingsManager {
           this.plugin.data.maxHistoryCount = config.maxHistoryCount || 50;
         });
 
-        input.addEventListener('input', () => {
+        input.addEventListener("input", () => {
           const value = parseInt(input.value, 10);
           if (!isNaN(value) && value >= 1 && value <= 1000) {
             this.plugin.data.maxHistoryCount = value;
@@ -158,24 +158,24 @@ export class SettingsManager {
       currentModel: string
     ) => {
       if (models.length === 0) {
-        container.innerHTML = '';
-        container.style.display = 'none';
+        container.innerHTML = "";
+        container.style.display = "none";
         return;
       }
 
       container.innerHTML = models.map(model => {
         const isSelected = model === currentModel;
-        const escapedModel = model.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-        return `<div class="gleam-model-item ${isSelected ? 'selected' : ''}" data-value="${escapedModel}">${model}</div>`;
-      }).join('');
+        const escapedModel = model.replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+        return `<div class="gleam-model-item ${isSelected ? "selected" : ""}" data-value="${escapedModel}">${model}</div>`;
+      }).join("");
       
       // 添加点击事件
-      container.querySelectorAll('.gleam-model-item').forEach(item => {
-        item.addEventListener('click', () => {
-          const value = item.getAttribute('data-value') || '';
+      container.querySelectorAll(".gleam-model-item").forEach(item => {
+        item.addEventListener("click", () => {
+          const value = item.getAttribute("data-value") || "";
           select.value = value;
           searchInput.value = value;
-          container.style.display = 'none';
+          container.style.display = "none";
           this.plugin.data.defaultModel = value;
         });
       });
@@ -209,8 +209,8 @@ export class SettingsManager {
     ) => {
       modelSelect.innerHTML = '<option value="">加载中...</option>';
       modelSelect.disabled = true;
-      modelSearchInput.value = '';
-      modelListContainer.style.display = 'none';
+      modelSearchInput.value = "";
+      modelListContainer.style.display = "none";
 
       try {
         const config = await this.storage.getConfig();
@@ -220,22 +220,22 @@ export class SettingsManager {
           modelSelect.innerHTML = '<option value="">请先配置API密钥</option>';
           modelSelect.disabled = true;
           allModelsForSettings = [];
-          renderModelListForSettings([], modelListContainer, modelSearchInput, modelSelect, '');
+          renderModelListForSettings([], modelListContainer, modelSearchInput, modelSelect, "");
           return;
         }
 
-        const aiProvider = this.providers.get('openrouter');
+        const aiProvider = this.providers.get("openrouter");
         if (!aiProvider) {
           modelSelect.innerHTML = '<option value="">供应商不存在</option>';
           modelSelect.disabled = true;
           allModelsForSettings = [];
-          renderModelListForSettings([], modelListContainer, modelSearchInput, modelSelect, '');
+          renderModelListForSettings([], modelListContainer, modelSearchInput, modelSelect, "");
           return;
         }
 
         // 尝试获取模型详细信息
         let models: string[] = [];
-        if (typeof (aiProvider as any).getModelsWithInfo === 'function') {
+        if (typeof (aiProvider as any).getModelsWithInfo === "function") {
           const modelsInfo = await (aiProvider as any).getModelsWithInfo(providerConfig.apiKey);
           models = modelsInfo.map((m: any) => m.id);
         } else {
@@ -245,7 +245,7 @@ export class SettingsManager {
         allModelsForSettings = models;
         modelSelect.innerHTML = '<option value="">请选择模型</option>';
         models.forEach(model => {
-          const option = document.createElement('option');
+          const option = document.createElement("option");
           option.value = model;
           option.textContent = model;
           if (model === currentModel) {
@@ -263,36 +263,36 @@ export class SettingsManager {
         // 渲染模型列表
         renderModelListForSettings(models, modelListContainer, modelSearchInput, modelSelect, currentModel);
       } catch (error) {
-        Logger.error('Failed to load models:', error);
+        Logger.error("Failed to load models:", error);
         modelSelect.innerHTML = '<option value="">加载失败，请检查API密钥</option>';
         modelSelect.disabled = true;
         allModelsForSettings = [];
-        renderModelListForSettings([], modelListContainer, modelSearchInput, modelSelect, '');
+        renderModelListForSettings([], modelListContainer, modelSearchInput, modelSelect, "");
       }
     };
 
     this.setting.addItem({
-      title: this.plugin.i18n.defaultModel || '默认模型',
+      title: this.plugin.i18n.defaultModel || "默认模型",
       direction: "row",
-      description: this.plugin.i18n.defaultModelDesc || '新建对话时默认使用的模型（需要先配置对应供应商的API密钥）',
+      description: this.plugin.i18n.defaultModelDesc || "新建对话时默认使用的模型（需要先配置对应供应商的API密钥）",
       createActionElement: () => {
-        const wrapper = document.createElement('div');
-        wrapper.className = 'gleam-model-select-wrapper';
-        wrapper.style.position = 'relative';
-        wrapper.style.width = '100%';
+        const wrapper = document.createElement("div");
+        wrapper.className = "gleam-model-select-wrapper";
+        wrapper.style.position = "relative";
+        wrapper.style.width = "100%";
         
-        defaultModelSearchInputRef = document.createElement('input');
-        defaultModelSearchInputRef.type = 'text';
-        defaultModelSearchInputRef.className = 'gleam-model-search';
-        defaultModelSearchInputRef.placeholder = '搜索模型...';
-        defaultModelSearchInputRef.style.width = '100%';
-        defaultModelSearchInputRef.autocomplete = 'off';
+        defaultModelSearchInputRef = document.createElement("input");
+        defaultModelSearchInputRef.type = "text";
+        defaultModelSearchInputRef.className = "gleam-model-search";
+        defaultModelSearchInputRef.placeholder = "搜索模型...";
+        defaultModelSearchInputRef.style.width = "100%";
+        defaultModelSearchInputRef.autocomplete = "off";
         
-        defaultModelSelectRef = document.createElement('select');
-        defaultModelSelectRef.className = 'b3-select fn__flex-1';
+        defaultModelSelectRef = document.createElement("select");
+        defaultModelSelectRef.className = "b3-select fn__flex-1";
         
-        defaultModelListContainerRef = document.createElement('div');
-        defaultModelListContainerRef.className = 'gleam-model-list';
+        defaultModelListContainerRef = document.createElement("div");
+        defaultModelListContainerRef.className = "gleam-model-list";
         
         wrapper.appendChild(defaultModelSearchInputRef);
         wrapper.appendChild(defaultModelSelectRef);
@@ -303,11 +303,11 @@ export class SettingsManager {
         }
         
         this.storage.getConfig().then(async (config) => {
-          await loadModelsForProvider(defaultModelSelectRef!, defaultModelSearchInputRef!, defaultModelListContainerRef!, config.currentModel || '');
-          this.plugin.data.defaultModel = config.currentModel || '';
+          await loadModelsForProvider(defaultModelSelectRef!, defaultModelSearchInputRef!, defaultModelListContainerRef!, config.currentModel || "");
+          this.plugin.data.defaultModel = config.currentModel || "";
         });
 
-        defaultModelSelectRef.addEventListener('change', () => {
+        defaultModelSelectRef.addEventListener("change", () => {
           this.plugin.data.defaultModel = defaultModelSelectRef!.value;
           if (defaultModelSearchInputRef) {
             defaultModelSearchInputRef.value = defaultModelSelectRef!.value;
@@ -315,10 +315,10 @@ export class SettingsManager {
         });
 
         // 搜索功能 - 过滤 select 选项
-        defaultModelSearchInputRef.addEventListener('input', (e) => {
+        defaultModelSearchInputRef.addEventListener("input", (e) => {
           const keyword = (e.target as HTMLInputElement).value.toLowerCase();
           if (defaultModelSelectRef) {
-            const options = defaultModelSelectRef.querySelectorAll('option');
+            const options = defaultModelSelectRef.querySelectorAll("option");
             options.forEach((option, index) => {
               // 第一个选项（"请选择模型"）始终显示
               if (index === 0) {
@@ -326,9 +326,9 @@ export class SettingsManager {
               }
               
               if (!keyword || option.textContent?.toLowerCase().includes(keyword)) {
-                (option as HTMLElement).style.display = '';
+                (option as HTMLElement).style.display = "";
               } else {
-                (option as HTMLElement).style.display = 'none';
+                (option as HTMLElement).style.display = "none";
               }
             });
           }
@@ -337,26 +337,26 @@ export class SettingsManager {
           if (defaultModelListContainerRef && defaultModelSearchInputRef && defaultModelSelectRef) {
             filterModelsForSettings(keyword, defaultModelListContainerRef, defaultModelSearchInputRef, defaultModelSelectRef);
             if (keyword && allModelsForSettings.length > 0) {
-              defaultModelListContainerRef.style.display = 'block';
+              defaultModelListContainerRef.style.display = "block";
             } else {
-              defaultModelListContainerRef.style.display = 'none';
+              defaultModelListContainerRef.style.display = "none";
             }
           }
         });
 
-        defaultModelSearchInputRef.addEventListener('focus', () => {
+        defaultModelSearchInputRef.addEventListener("focus", () => {
           if (defaultModelListContainerRef && allModelsForSettings.length > 0) {
-            defaultModelListContainerRef.style.display = 'block';
+            defaultModelListContainerRef.style.display = "block";
           }
         });
 
         // 点击外部关闭列表
-        document.addEventListener('click', (e) => {
+        document.addEventListener("click", (e) => {
           if (defaultModelListContainerRef && 
               defaultModelSearchInputRef && 
               !defaultModelSearchInputRef.contains(e.target as Node) && 
               !defaultModelListContainerRef.contains(e.target as Node)) {
-            defaultModelListContainerRef.style.display = 'none';
+            defaultModelListContainerRef.style.display = "none";
           }
         });
 
@@ -385,7 +385,7 @@ export class SettingsManager {
         config.currentModel = this.plugin.data.defaultModel;
       }
       // 始终设置为 openrouter
-      config.currentProvider = 'openrouter';
+      config.currentProvider = "openrouter";
     }
 
     await this.storage.saveConfig(config);
@@ -394,10 +394,10 @@ export class SettingsManager {
     // 应用新的历史数量限制
     await this.storage.applyHistoryLimit();
 
-    if (typeof (window as any).gleamChatPanel?.loadModels === 'function') {
+    if (typeof (window as any).gleamChatPanel?.loadModels === "function") {
       await (window as any).gleamChatPanel.loadModels(config.currentProvider);
       // 如果设置了默认模型，更新模型选择
-      if (config.currentModel && typeof (window as any).gleamChatPanel?.modelSelect !== 'undefined') {
+      if (config.currentModel && typeof (window as any).gleamChatPanel?.modelSelect !== "undefined") {
         (window as any).gleamChatPanel.modelSelect.value = config.currentModel;
       }
     }

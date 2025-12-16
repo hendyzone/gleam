@@ -1,7 +1,6 @@
-import { ConfigHandler } from '../handlers/configHandler';
-import { AttachmentHandler } from '../handlers/attachmentHandler';
-import { DataStorage } from '../../storage/data';
-import { ModelInfo } from '../../utils/types';
+import { ConfigService } from "../../services/ConfigService";
+import { AttachmentHandler } from "../handlers/attachmentHandler";
+import { DataStorage } from "../../storage/data";
 
 /**
  * 事件管理器
@@ -21,7 +20,7 @@ export class EventManager {
     private parametersButton: HTMLButtonElement,
     private exportButton: HTMLButtonElement,
     private storage: DataStorage,
-    private configHandler: ConfigHandler,
+    private configService: ConfigService,
     private attachmentHandler: AttachmentHandler,
     private plugin: any,
     private onSend: () => Promise<void>,
@@ -50,9 +49,9 @@ export class EventManager {
    * 附加发送相关事件
    */
   private attachSendEvents(): void {
-    this.sendButton.addEventListener('click', () => this.onSend());
-    this.textarea.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && !e.shiftKey) {
+    this.sendButton.addEventListener("click", () => this.onSend());
+    this.textarea.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
         this.onSend();
       }
@@ -63,10 +62,10 @@ export class EventManager {
    * 附加粘贴事件
    */
   private attachPasteEvents(): void {
-    this.textarea.addEventListener('paste', async (e) => {
+    this.textarea.addEventListener("paste", async (e) => {
       const config = await this.storage.getConfig();
-      const currentModelInfo = this.configHandler.getModelInfo(config.currentModel);
-      const supportedInputTypes = currentModelInfo?.inputModalities || ['text'];
+      const currentModelInfo = this.configService.getModelInfo(config.currentModel);
+      const supportedInputTypes = currentModelInfo?.inputModalities || ["text"];
       await this.attachmentHandler.handlePaste(e as ClipboardEvent, supportedInputTypes);
     });
   }
@@ -75,24 +74,24 @@ export class EventManager {
    * 附加文件选择事件
    */
   private attachFileEvents(): void {
-    this.imageButton.addEventListener('click', () => {
+    this.imageButton.addEventListener("click", () => {
       this.imageInput.click();
     });
     
-    this.imageInput.addEventListener('change', async (e) => {
+    this.imageInput.addEventListener("change", async (e) => {
       const input = e.target as HTMLInputElement;
       const files = input.files;
       if (!files || files.length === 0) return;
 
       // 检查当前模型是否支持文件类型
       const config = await this.storage.getConfig();
-      const currentModelInfo = this.configHandler.getModelInfo(config.currentModel);
-      const supportedInputTypes = currentModelInfo?.inputModalities || ['text'];
+      const currentModelInfo = this.configService.getModelInfo(config.currentModel);
+      const supportedInputTypes = currentModelInfo?.inputModalities || ["text"];
 
       await this.attachmentHandler.handleFileSelect(files, supportedInputTypes);
       
       // 清空 input，允许重复选择同一文件
-      input.value = '';
+      input.value = "";
     });
   }
 
@@ -100,11 +99,11 @@ export class EventManager {
    * 附加模型相关事件
    */
   private attachModelEvents(): void {
-    this.modelButton.addEventListener('click', () => {
+    this.modelButton.addEventListener("click", () => {
       this.onModelDialog();
     });
     
-    this.modelSelect.addEventListener('change', () => {
+    this.modelSelect.addEventListener("change", () => {
       this.onModelSelectChange();
     });
   }
@@ -113,23 +112,23 @@ export class EventManager {
    * 附加控制按钮事件
    */
   private attachControlEvents(): void {
-    this.contextToggle.addEventListener('change', () => {
+    this.contextToggle.addEventListener("change", () => {
       this.onContextToggleChange();
     });
     
-    this.historyButton.addEventListener('click', () => {
+    this.historyButton.addEventListener("click", () => {
       this.onHistoryToggle();
     });
     
-    this.newChatButton.addEventListener('click', () => {
+    this.newChatButton.addEventListener("click", () => {
       this.onNewChat();
     });
     
-    this.parametersButton.addEventListener('click', () => {
+    this.parametersButton.addEventListener("click", () => {
       this.onParametersPanel();
     });
     
-    this.exportButton.addEventListener('click', () => {
+    this.exportButton.addEventListener("click", () => {
       this.onExport();
     });
   }

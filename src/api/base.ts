@@ -1,4 +1,4 @@
-import { Provider, AIRequestOptions, AIResponse, ModelInfo } from '../utils/types';
+import { Provider, AIRequestOptions, AIResponse, ModelInfo } from "../utils/types";
 
 export interface AIProvider {
   name: Provider;
@@ -13,8 +13,8 @@ export abstract class BaseAIProvider implements AIProvider {
 
   protected async fetchWithAuth(url: string, options: RequestInit, apiKey: string): Promise<Response> {
     const headers = new Headers(options.headers);
-    headers.set('Authorization', `Bearer ${apiKey}`);
-    headers.set('Content-Type', 'application/json');
+    headers.set("Authorization", `Bearer ${apiKey}`);
+    headers.set("Content-Type", "application/json");
 
     const response = await fetch(url, {
       ...options,
@@ -22,7 +22,7 @@ export abstract class BaseAIProvider implements AIProvider {
     });
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ error: { message: 'Unknown error' } }));
+      const error = await response.json().catch(() => ({ error: { message: "Unknown error" } }));
       throw new Error(error.error?.message || `HTTP ${response.status}: ${response.statusText}`);
     }
 

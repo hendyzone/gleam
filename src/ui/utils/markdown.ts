@@ -1,4 +1,4 @@
-import { Logger } from '../../utils/logger';
+import { Logger } from "../../utils/logger";
 
 /**
  * Markdown 渲染工具类
@@ -8,7 +8,7 @@ export class MarkdownRenderer {
    * 转义 HTML 特殊字符
    */
   static escapeHtml(text: string): string {
-    const div = document.createElement('div');
+    const div = document.createElement("div");
     div.textContent = text;
     return div.innerHTML;
   }
@@ -40,7 +40,7 @@ export class MarkdownRenderer {
       // 使用 Lute 渲染 Markdown
       return lute.Md2HTML(markdown);
     } catch (error) {
-      Logger.error('[MarkdownRenderer] Markdown 渲染失败:', error);
+      Logger.error("[MarkdownRenderer] Markdown 渲染失败:", error);
       // 降级到简单渲染
       return this.simpleMarkdownRender(markdown);
     }
@@ -56,7 +56,7 @@ export class MarkdownRenderer {
     const codeBlocks: string[] = [];
     html = html.replace(/```(\w+)?\n([\s\S]*?)```/g, (match, lang, code) => {
       const placeholder = `__CODE_BLOCK_${codeBlocks.length}__`;
-      codeBlocks.push(`<pre><code class="language-${lang || 'text'}">${this.escapeHtml(code)}</code></pre>`);
+      codeBlocks.push(`<pre><code class="language-${lang || "text"}">${this.escapeHtml(code)}</code></pre>`);
       return placeholder;
     });
     
@@ -80,12 +80,12 @@ export class MarkdownRenderer {
     });
     
     // 标题（必须在转义之前处理，按从多到少的顺序）
-    html = html.replace(/^###### (.*)$/gim, '<h6>$1</h6>');
-    html = html.replace(/^##### (.*)$/gim, '<h5>$1</h5>');
-    html = html.replace(/^#### (.*)$/gim, '<h4>$1</h4>');
-    html = html.replace(/^### (.*)$/gim, '<h3>$1</h3>');
-    html = html.replace(/^## (.*)$/gim, '<h2>$1</h2>');
-    html = html.replace(/^# (.*)$/gim, '<h1>$1</h1>');
+    html = html.replace(/^###### (.*)$/gim, "<h6>$1</h6>");
+    html = html.replace(/^##### (.*)$/gim, "<h5>$1</h5>");
+    html = html.replace(/^#### (.*)$/gim, "<h4>$1</h4>");
+    html = html.replace(/^### (.*)$/gim, "<h3>$1</h3>");
+    html = html.replace(/^## (.*)$/gim, "<h2>$1</h2>");
+    html = html.replace(/^# (.*)$/gim, "<h1>$1</h1>");
     
     // 转义 HTML（标题已经处理，不会被转义）
     html = this.escapeHtml(html);
@@ -106,53 +106,53 @@ export class MarkdownRenderer {
     });
     
     // 恢复标题（因为 escapeHtml 会转义它们）
-    html = html.replace(/&lt;h([1-6])&gt;(.*?)&lt;\/h([1-6])&gt;/g, '<h$1>$2</h$3>');
+    html = html.replace(/&lt;h([1-6])&gt;(.*?)&lt;\/h([1-6])&gt;/g, "<h$1>$2</h$3>");
     
     // 粗体
-    html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-    html = html.replace(/__([^_]+)__/g, '<strong>$1</strong>');
+    html = html.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+    html = html.replace(/__([^_]+)__/g, "<strong>$1</strong>");
     
     // 斜体
-    html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>');
-    html = html.replace(/_([^_]+)_/g, '<em>$1</em>');
+    html = html.replace(/\*([^*]+)\*/g, "<em>$1</em>");
+    html = html.replace(/_([^_]+)_/g, "<em>$1</em>");
     
     // 链接
     html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
     
     // 列表（无序）
-    html = html.replace(/^\* (.*)$/gim, '<li>$1</li>');
-    html = html.replace(/^- (.*)$/gim, '<li>$1</li>');
-    html = html.replace(/^\+ (.*)$/gim, '<li>$1</li>');
+    html = html.replace(/^\* (.*)$/gim, "<li>$1</li>");
+    html = html.replace(/^- (.*)$/gim, "<li>$1</li>");
+    html = html.replace(/^\+ (.*)$/gim, "<li>$1</li>");
     
     // 有序列表
-    html = html.replace(/^\d+\. (.*)$/gim, '<li>$1</li>');
+    html = html.replace(/^\d+\. (.*)$/gim, "<li>$1</li>");
     
     // 引用
-    html = html.replace(/^&gt; (.*)$/gim, '<blockquote>$1</blockquote>');
+    html = html.replace(/^&gt; (.*)$/gim, "<blockquote>$1</blockquote>");
     
     // 分隔线
-    html = html.replace(/^---$/gim, '<hr>');
-    html = html.replace(/^\*\*\*$/gim, '<hr>');
+    html = html.replace(/^---$/gim, "<hr>");
+    html = html.replace(/^\*\*\*$/gim, "<hr>");
     
     // 将连续的 li 包裹在 ul 或 ol 中
     html = html.replace(/(<li>.*?<\/li>(?:\n|$))+/g, (match) => {
       // 检查是否是有序列表（包含数字）
       const isOrdered = /^\d+\./.test(match);
-      const tag = isOrdered ? 'ol' : 'ul';
+      const tag = isOrdered ? "ol" : "ul";
       return `<${tag}>${match}</${tag}>`;
     });
     
     // 段落处理：将连续的非标签行包裹在 <p> 中
-    const lines = html.split('\n');
+    const lines = html.split("\n");
     const processedLines: string[] = [];
     let currentParagraph: string[] = [];
     
     for (const line of lines) {
       const trimmed = line.trim();
       // 如果是空行，结束当前段落
-      if (trimmed === '') {
+      if (trimmed === "") {
         if (currentParagraph.length > 0) {
-          processedLines.push(`<p>${currentParagraph.join(' ')}</p>`);
+          processedLines.push(`<p>${currentParagraph.join(" ")}</p>`);
           currentParagraph = [];
         }
         continue;
@@ -161,14 +161,14 @@ export class MarkdownRenderer {
       // 表格标签需要特殊处理，因为表格是多行的
       if (trimmed.match(/^<(h[1-6]|ul|ol|li|pre|code|blockquote|hr|p)/)) {
         if (currentParagraph.length > 0) {
-          processedLines.push(`<p>${currentParagraph.join(' ')}</p>`);
+          processedLines.push(`<p>${currentParagraph.join(" ")}</p>`);
           currentParagraph = [];
         }
         processedLines.push(line);
       } else if (trimmed.match(/^<(table|thead|tbody|tr|th|td)/)) {
         // 表格相关标签，直接添加，不包裹在段落中
         if (currentParagraph.length > 0) {
-          processedLines.push(`<p>${currentParagraph.join(' ')}</p>`);
+          processedLines.push(`<p>${currentParagraph.join(" ")}</p>`);
           currentParagraph = [];
         }
         processedLines.push(line);
@@ -180,10 +180,10 @@ export class MarkdownRenderer {
     
     // 处理剩余的段落
     if (currentParagraph.length > 0) {
-      processedLines.push(`<p>${currentParagraph.join(' ')}</p>`);
+      processedLines.push(`<p>${currentParagraph.join(" ")}</p>`);
     }
     
-    html = processedLines.join('\n');
+    html = processedLines.join("\n");
     
     return html;
   }
@@ -192,7 +192,7 @@ export class MarkdownRenderer {
    * 渲染 Markdown 表格
    */
   private static renderTable(tableMarkdown: string): string {
-    const lines = tableMarkdown.trim().split('\n').filter(line => line.trim());
+    const lines = tableMarkdown.trim().split("\n").filter(line => line.trim());
     if (lines.length < 2) {
       return tableMarkdown; // 不是有效的表格，返回原文本
     }
@@ -210,31 +210,31 @@ export class MarkdownRenderer {
     }
 
     // 构建表格 HTML
-    let tableHtml = '<table>\n<thead>\n<tr>\n';
+    let tableHtml = "<table>\n<thead>\n<tr>\n";
     headers.forEach(header => {
       // 对表头内容进行转义，但保留已处理的 Markdown（如粗体、斜体等）
       const headerContent = this.processInlineMarkdown(header.trim());
       tableHtml += `<th>${headerContent}</th>\n`;
     });
-    tableHtml += '</tr>\n</thead>\n<tbody>\n';
+    tableHtml += "</tr>\n</thead>\n<tbody>\n";
 
     // 解析数据行
     dataLines.forEach(dataLine => {
       const cells = this.parseTableRow(dataLine);
       if (cells.length > 0) {
-        tableHtml += '<tr>\n';
+        tableHtml += "<tr>\n";
         // 确保单元格数量与表头一致
         for (let i = 0; i < headers.length; i++) {
-          const cell = cells[i] || '';
+          const cell = cells[i] || "";
           // 对单元格内容进行转义，但保留已处理的 Markdown（如粗体、斜体等）
           const cellContent = this.processInlineMarkdown(cell.trim());
           tableHtml += `<td>${cellContent}</td>\n`;
         }
-        tableHtml += '</tr>\n';
+        tableHtml += "</tr>\n";
       }
     });
 
-    tableHtml += '</tbody>\n</table>';
+    tableHtml += "</tbody>\n</table>";
     return tableHtml;
   }
 
@@ -246,18 +246,18 @@ export class MarkdownRenderer {
     let html = this.escapeHtml(text);
     
     // 粗体
-    html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-    html = html.replace(/__([^_]+)__/g, '<strong>$1</strong>');
+    html = html.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+    html = html.replace(/__([^_]+)__/g, "<strong>$1</strong>");
     
     // 斜体
-    html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>');
-    html = html.replace(/_([^_]+)_/g, '<em>$1</em>');
+    html = html.replace(/\*([^*]+)\*/g, "<em>$1</em>");
+    html = html.replace(/_([^_]+)_/g, "<em>$1</em>");
     
     // 链接
     html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
     
     // 行内代码
-    html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+    html = html.replace(/`([^`]+)`/g, "<code>$1</code>");
     
     return html;
   }
@@ -268,12 +268,12 @@ export class MarkdownRenderer {
   private static parseTableRow(row: string): string[] {
     // 移除首尾的管道符和空格
     const trimmed = row.trim();
-    if (!trimmed.startsWith('|') || !trimmed.endsWith('|')) {
+    if (!trimmed.startsWith("|") || !trimmed.endsWith("|")) {
       return [];
     }
     
     // 分割单元格（移除首尾的管道符）
-    const cells = trimmed.slice(1, -1).split('|');
+    const cells = trimmed.slice(1, -1).split("|");
     return cells.map(cell => cell.trim());
   }
 }
