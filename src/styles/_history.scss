@@ -4,42 +4,57 @@
   max-height: 200px;
   overflow-y: auto;
   border-top: 1px solid var(--b3-border-color);
-  padding: 8px;
+  padding: 10px;
   display: none;
+  background: rgba(0, 0, 0, 0.02);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
 
   &.show {
     display: block;
+    animation: slideDownHistory 0.3s ease-out;
   }
 }
 
 .gleam-history-item {
-  padding: 8px;
-  border-bottom: 1px solid var(--b3-border-color);
+  padding: 10px 12px;
+  margin-bottom: 6px;
+  border-radius: 8px;
+  border: 1px solid transparent;
   cursor: pointer;
-  font-size: 12px;
-  transition: background 0.2s;
+  font-size: 13px;
+  transition: all 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: 10px;
+  background: var(--b3-theme-background);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+
+  &:last-child {
+    margin-bottom: 0;
+  }
 
   &:hover {
     background: var(--b3-theme-surface);
+    border-color: var(--b3-border-color);
+    transform: translateX(4px);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
   }
 
   &-number {
     flex-shrink: 0;
-    width: 24px;
-    height: 24px;
+    width: 28px;
+    height: 28px;
     display: flex;
     align-items: center;
     justify-content: center;
     background: var(--b3-theme-surface);
-    border-radius: 4px;
-    font-size: 11px;
-    font-weight: 500;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
     color: var(--b3-theme-on-background);
-    opacity: 0.7;
+    opacity: 0.8;
+    border: 1px solid var(--b3-border-color);
   }
 
   &-content {
@@ -51,10 +66,11 @@
     font-weight: 500;
     margin-bottom: 4px;
     word-break: break-word;
+    line-height: 1.4;
   }
 
   &-time {
-    font-size: 10px;
+    font-size: 11px;
     opacity: 0.6;
   }
 }
@@ -65,25 +81,52 @@
   cursor: pointer;
   font-size: 18px;
   padding: 4px;
-  opacity: 0.5;
-  transition: opacity 0.2s, transform 0.2s;
+  opacity: 0.4;
+  transition: all 0.2s ease;
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 4px;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
 
   &:hover {
     opacity: 1;
-    background: var(--b3-theme-surface);
-    transform: scale(1.1);
+    background: rgba(255, 165, 0, 0.1);
+    transform: scale(1.15) rotate(15deg);
   }
 
   &.active {
     opacity: 1;
     color: #ffa500;
+    animation: heartBeat 0.5s ease-in-out;
+  }
+}
+
+@keyframes slideDownHistory {
+  from {
+    opacity: 0;
+    max-height: 0;
+  }
+  to {
+    opacity: 1;
+    max-height: 200px;
+  }
+}
+
+@keyframes heartBeat {
+  0%, 100% {
+    transform: scale(1);
+  }
+  25% {
+    transform: scale(1.2);
+  }
+  50% {
+    transform: scale(0.95);
+  }
+  75% {
+    transform: scale(1.1);
   }
 }
 
