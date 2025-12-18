@@ -1,7 +1,7 @@
 import React, { useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { useUIContext } from "../../contexts/UIContext";
-import "./ImageZoom.module.scss";
+import "./ImageZoom.scss";
 
 const ImageZoom: React.FC = () => {
   const { state: uiState, dispatch: uiDispatch } = useUIContext();

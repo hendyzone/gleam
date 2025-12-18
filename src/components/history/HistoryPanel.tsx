@@ -3,7 +3,7 @@ import { useAppContext } from "../../contexts/AppContext";
 import { useUIContext } from "../../contexts/UIContext";
 import { useHistory } from "../../hooks/business/useHistory";
 import HistoryItem from "./HistoryItem";
-import "./HistoryPanel.module.scss";
+import "./HistoryPanel.scss";
 
 const HistoryPanel: React.FC = () => {
   const { i18n } = useAppContext();

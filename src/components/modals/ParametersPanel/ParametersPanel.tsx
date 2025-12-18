@@ -5,7 +5,7 @@ import { useModelSelection } from "../../../hooks/business/useModelSelection";
 import { useModelParameters } from "../../../hooks/business/useModelParameters";
 import { ModelParameters } from "../../../utils/types";
 import ParameterInput from "./ParameterInput";
-import "./ParametersPanel.module.scss";
+import "./ParametersPanel.scss";
 
 const ParametersPanel: React.FC = () => {
   const { i18n } = useAppContext();

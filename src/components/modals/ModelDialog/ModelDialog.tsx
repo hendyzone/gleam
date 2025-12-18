@@ -6,7 +6,7 @@ import { useModelSelection } from "../../../hooks/business/useModelSelection";
 import ModelSearch from "./ModelSearch";
 import ModelFilters from "./ModelFilters";
 import ModelList from "./ModelList";
-import "./ModelDialog.module.scss";
+import "./ModelDialog.scss";
 
 const ModelDialog: React.FC = () => {
   const { i18n } = useAppContext();

@@ -1,6 +1,6 @@
 import React, { useEffect, useCallback } from "react";
 import { useUIContext } from "../../contexts/UIContext";
-import "./Notifications.module.scss";
+import "./Notifications.scss";
 
 const Notifications: React.FC = () => {
   const { state: uiState, dispatch: uiDispatch } = useUIContext();
