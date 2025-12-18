@@ -1,3 +1,4 @@
+import { useCallback } from "react";
 import { useAppContext } from "../../contexts/AppContext";
 import { useChatContext } from "../../contexts/ChatContext";
 import { useHistoryContext } from "../../contexts/HistoryContext";
@@ -14,7 +15,7 @@ export const useHistory = () => {
   /**
    * 加载历史记录列表
    */
-  const loadHistory = async (): Promise<void> => {
+  const loadHistory = useCallback(async (): Promise<void> => {
     try {
       historyDispatch({ type: "SET_LOADING_HISTORY", payload: true });
       const history = await storage.getHistory();
@@ -32,12 +33,12 @@ export const useHistory = () => {
         }
       });
     }
-  };
+  }, [storage, historyDispatch, uiDispatch]);
 
   /**
    * 从历史记录加载对话
    */
-  const loadChatFromHistory = async (id: string): Promise<void> => {
+  const loadChatFromHistory = useCallback(async (id: string): Promise<void> => {
     try {
       const item = historyState.history.find((h) => h.id === id);
       if (!item) {
@@ -83,12 +84,12 @@ export const useHistory = () => {
         }
       });
     }
-  };
+  }, [historyState.history, chatDispatch, historyDispatch, uiDispatch]);
 
   /**
    * 切换收藏状态
    */
-  const toggleFavorite = async (id: string): Promise<void> => {
+  const toggleFavorite = useCallback(async (id: string): Promise<void> => {
     try {
       await storage.toggleFavorite(id);
 
@@ -106,12 +107,12 @@ export const useHistory = () => {
         }
       });
     }
-  };
+  }, [storage, loadHistory, uiDispatch]);
 
   /**
    * 删除历史记录项
    */
-  const deleteHistoryItem = async (id: string): Promise<void> => {
+  const deleteHistoryItem = useCallback(async (id: string): Promise<void> => {
     try {
       await storage.deleteHistoryItem(id);
 
@@ -137,12 +138,12 @@ export const useHistory = () => {
         }
       });
     }
-  };
+  }, [storage, loadHistory, uiDispatch]);
 
   /**
    * 保存当前对话
    */
-  const saveCurrentChat = async (messages: ChatMessage[]): Promise<void> => {
+  const saveCurrentChat = useCallback(async (messages: ChatMessage[]): Promise<void> => {
     if (messages.length === 0) return;
 
     try {
@@ -160,15 +161,15 @@ export const useHistory = () => {
     } catch (error: any) {
       Logger.error("Failed to save chat:", error);
     }
-  };
+  }, [storage]);
 
   /**
    * 检查是否有历史记录
    */
-  const hasHistory = async (): Promise<boolean> => {
+  const hasHistory = useCallback(async (): Promise<boolean> => {
     const history = await storage.getHistory();
     return history.length > 0;
-  };
+  }, [storage]);
 
   return {
     history: historyState.history,
