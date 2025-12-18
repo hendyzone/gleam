@@ -67,8 +67,19 @@ const ParametersPanel: React.FC = () => {
   const supportedParams = currentModelInfo?.supportedParameters || [];
   const defaultParams = currentModelInfo?.defaultParameters || {};
 
+  const overlayStyle: React.CSSProperties = {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: '100vw',
+    height: '100vh',
+    zIndex: 999999
+  };
+
   return createPortal(
-    <div className="gleam-parameters-panel" onClick={handleOverlayClick}>
+    <div className="gleam-parameters-panel" style={overlayStyle} onClick={handleOverlayClick}>
       <div className="gleam-parameters-panel-content">
         <div className="gleam-parameters-panel-header">
           <div className="gleam-parameters-panel-title">

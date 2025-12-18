@@ -44,8 +44,22 @@ const HistoryPanel: React.FC = () => {
     return null;
   }
 
+  // Debug log
+  console.log("[HistoryPanel] Rendering to body, portal target:", document.body);
+
+  const overlayStyle: React.CSSProperties = {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: '100vw',
+    height: '100vh',
+    zIndex: 999999
+  };
+
   return createPortal(
-    <div className="gleam-history-panel" onClick={handleOverlayClick}>
+    <div className="gleam-history-panel" style={overlayStyle} onClick={handleOverlayClick}>
       <div className="gleam-history-panel-content">
         <div className="gleam-history-panel-header">
           <div className="gleam-history-panel-title">
