@@ -44,17 +44,21 @@ const ModelDialog: React.FC = () => {
 
   const overlayStyle: React.CSSProperties = {
     position: 'fixed',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+    top: '0',
+    left: '0',
     width: '100vw',
     height: '100vh',
-    zIndex: 999999
+    zIndex: 999999,
+    margin: '0',
+    padding: '0',
+    background: 'rgba(0, 0, 0, 0.6)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center'
   };
 
   return createPortal(
-    <div className="gleam-model-dialog" style={overlayStyle} onClick={handleOverlayClick}>
+    <div style={overlayStyle} onClick={handleOverlayClick}>
       <div className="gleam-model-dialog-content">
         <div className="gleam-model-dialog-header">
           <div className="gleam-model-dialog-title">
