@@ -1,4 +1,5 @@
 import React, { useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { useAppContext } from "../../contexts/AppContext";
 import { useUIContext } from "../../contexts/UIContext";
 import { useHistory } from "../../hooks/business/useHistory";
@@ -43,7 +44,7 @@ const HistoryPanel: React.FC = () => {
     return null;
   }
 
-  return (
+  return createPortal(
     <div className="gleam-history-panel" onClick={handleOverlayClick}>
       <div className="gleam-history-panel-content">
         <div className="gleam-history-panel-header">
@@ -98,7 +99,8 @@ const HistoryPanel: React.FC = () => {
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

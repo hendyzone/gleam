@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { createPortal } from "react-dom";
 import { useAppContext } from "../../../contexts/AppContext";
 import { useConfigContext } from "../../../contexts/ConfigContext";
 import { useUIContext } from "../../../contexts/UIContext";
@@ -41,7 +42,7 @@ const ModelDialog: React.FC = () => {
     }
   };
 
-  return (
+  return createPortal(
     <div className="gleam-model-dialog" onClick={handleOverlayClick}>
       <div className="gleam-model-dialog-content">
         <div className="gleam-model-dialog-header">
@@ -79,7 +80,8 @@ const ModelDialog: React.FC = () => {
           onSelect={handleSelect}
         />
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

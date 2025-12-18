@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useAppContext } from "../../../contexts/AppContext";
 import { useUIContext } from "../../../contexts/UIContext";
 import { useModelSelection } from "../../../hooks/business/useModelSelection";
@@ -66,7 +67,7 @@ const ParametersPanel: React.FC = () => {
   const supportedParams = currentModelInfo?.supportedParameters || [];
   const defaultParams = currentModelInfo?.defaultParameters || {};
 
-  return (
+  return createPortal(
     <div className="gleam-parameters-panel" onClick={handleOverlayClick}>
       <div className="gleam-parameters-panel-content">
         <div className="gleam-parameters-panel-header">
@@ -135,7 +136,8 @@ const ParametersPanel: React.FC = () => {
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 
