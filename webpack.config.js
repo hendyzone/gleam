@@ -72,7 +72,14 @@ module.exports = (env, argv) => {
             ],
         },
         resolve: {
-            extensions: [".ts", ".scss", ".js", ".json"],
+            extensions: [".ts", ".tsx", ".scss", ".js", ".jsx", ".json"],
+            alias: {
+                '@': path.resolve(__dirname, 'src'),
+                '@components': path.resolve(__dirname, 'src/components'),
+                '@contexts': path.resolve(__dirname, 'src/contexts'),
+                '@hooks': path.resolve(__dirname, 'src/hooks'),
+                '@utils': path.resolve(__dirname, 'src/utils')
+            }
         },
         module: {
             rules: [
@@ -83,6 +90,7 @@ module.exports = (env, argv) => {
                         {
                             loader: "esbuild-loader",
                             options: {
+                                loader: 'tsx',
                                 target: "es6",
                             }
                         },
@@ -94,10 +102,16 @@ module.exports = (env, argv) => {
                     use: [
                         MiniCssExtractPlugin.loader,
                         {
-                            loader: "css-loader", // translates CSS into CommonJS
+                            loader: "css-loader",
+                            options: {
+                                modules: {
+                                    auto: (resourcePath) => resourcePath.endsWith('.module.scss'),
+                                    localIdentName: isPro ? '[hash:base64:8]' : '[name]__[local]--[hash:base64:5]'
+                                }
+                            }
                         },
                         {
-                            loader: "sass-loader", // compiles Sass to CSS
+                            loader: "sass-loader",
                         },
                     ],
                 }

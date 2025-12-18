@@ -1,0 +1,82 @@
+/* 图片放大组件样式 */
+
+.gleam-image-zoom {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10002;
+  animation: fadeIn 0.2s ease-out;
+  cursor: zoom-out;
+
+  &-content {
+    position: relative;
+    max-width: 90vw;
+    max-height: 90vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &-close {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: rgba(255, 255, 255, 0.9);
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    font-size: 28px;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #333;
+    transition: all 0.2s ease;
+    z-index: 1;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+
+    &:hover {
+      background: #fff;
+      transform: rotate(90deg) scale(1.1);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    }
+  }
+
+  &-img {
+    max-width: 100%;
+    max-height: 90vh;
+    object-fit: contain;
+    animation: zoomIn 0.3s ease-out;
+    cursor: default;
+    border-radius: 8px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes zoomIn {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
