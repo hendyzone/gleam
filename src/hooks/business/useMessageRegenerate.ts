@@ -15,6 +15,9 @@ export const useMessageRegenerate = () => {
    * 重新生成指定的助手消息
    */
   const regenerateMessage = async (messageId: string): Promise<void> => {
+    console.log("[useMessageRegenerate] Starting regeneration for message:", messageId);
+    console.log("[useMessageRegenerate] Current loading state:", chatState.isLoading);
+
     if (chatState.isLoading) {
       Logger.warn("Already loading, cannot regenerate");
       return;

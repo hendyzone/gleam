@@ -41,8 +41,12 @@ const MessageActions: React.FC<MessageActionsProps> = ({
   };
 
   const handleRegenerate = () => {
+    console.log("[MessageActions] Regenerate clicked for message:", messageId);
     if (onRegenerate) {
+      console.log("[MessageActions] Calling onRegenerate");
       onRegenerate(messageId);
+    } else {
+      console.warn("[MessageActions] onRegenerate is not provided");
     }
   };
 
