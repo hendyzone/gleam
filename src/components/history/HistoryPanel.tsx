@@ -44,9 +44,6 @@ const HistoryPanel: React.FC = () => {
     return null;
   }
 
-  // Debug log
-  console.log("[HistoryPanel] Rendering to body, portal target:", document.body);
-
   const overlayStyle: React.CSSProperties = {
     position: 'fixed',
     top: '0',
