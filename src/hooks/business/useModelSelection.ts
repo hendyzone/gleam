@@ -105,6 +105,9 @@ export const useModelSelection = () => {
    * 显示模型选择对话框
    */
   const showModelDialog = async (): Promise<void> => {
+    // 先显示对话框
+    uiDispatch({ type: "SHOW_MODEL_DIALOG", payload: true });
+
     // 如果模型列表为空，尝试加载
     if (configState.allModelsInfo.length === 0) {
       const config = await storage.getConfig();
@@ -115,7 +118,7 @@ export const useModelSelection = () => {
           type: "ADD_NOTIFICATION",
           payload: {
             type: "error",
-            message: "API key is required"
+            message: "请先在插件设置中配置 API Key"
           }
         });
         return;
@@ -123,23 +126,10 @@ export const useModelSelection = () => {
 
       try {
         await loadModels("openrouter");
-
-        if (configState.allModelsInfo.length === 0) {
-          uiDispatch({
-            type: "ADD_NOTIFICATION",
-            payload: {
-              type: "error",
-              message: "Failed to load models"
-            }
-          });
-          return;
-        }
       } catch (error) {
-        return; // Error already handled in loadModels
+        // Error already handled in loadModels
       }
     }
-
-    uiDispatch({ type: "SHOW_MODEL_DIALOG", payload: true });
   };
 
   /**

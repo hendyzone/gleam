@@ -9,7 +9,11 @@
       "Bash(npm run dev:*)",
       "Bash(pnpm run dev)",
       "Bash(npm run build:*)",
-      "Bash(dir:*)"
+      "Bash(dir:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nrefactor: complete React architecture migration with Context API and Hooks\n\nMigrated entire codebase from DOM manipulation to modern React architecture:\n\nPhase 1-2: Infrastructure & State Management\n- Added React 18.2, React DOM, and TypeScript JSX support\n- Implemented Context API with 5 contexts (App, Chat, Config, History, UI)\n- Created reducers for immutable state management\n- Set up React mounting system in src/app/\n\nPhase 3-4: Core Chat UI & Message Flow\n- Built component hierarchy: ChatContainer -> MessageList -> Message\n- Implemented streaming message rendering with performance optimization\n- Created InputArea with attachment support and auto-resize\n- Added MessageContent with markdown rendering (direct DOM for streaming)\n\nPhase 5-6: Configuration & History\n- Implemented ControlBar with model selection and parameters\n- Created ModelDialog with search and filtering\n- Built ParametersPanel for runtime configuration\n- Developed HistoryPanel with favorite support\n- Added export functionality via useExport hook\n\nPhase 7: UI Enhancements\n- Created ImageZoom component using React Portal\n- Implemented Notifications system with auto-dismiss\n- Added clipboard utilities for text and images\n- Enhanced MessageActions and MessageImage with copy features\n\nPhase 8: Cleanup & Optimization\n- Removed all legacy UI code (chatPanel, handlers, managers, builders)\n- Deleted migrated services (ConfigService, AIMessageService)\n- Applied React.memo, useCallback, useMemo for performance\n- Fixed all useEffect dependencies and cleanup functions\n- Updated CLAUDE.md documentation\n\nPerformance improvements:\n- React.memo on Message component prevents unnecessary re-renders\n- useCallback wrapping for all event handlers\n- Direct DOM manipulation during streaming to avoid flicker\n- useMemo for markdown rendering cache\n\nCode quality:\n- All useEffect hooks have correct dependencies\n- Event listeners properly cleaned up\n- Immutable state updates in all reducers\n- Type-safe React components with TypeScript\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(npx webpack:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ]
   }
 }

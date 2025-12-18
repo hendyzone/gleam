@@ -12,6 +12,8 @@ import { ContextInjector } from "./features/context-injection";
 import { mountReactApp, unmountReactApp } from "./app/mount";
 import { Root } from "react-dom/client";
 
+// 声明编译时注入的全局变量
+declare const __BUILD_TIME__: string;
 
 
 export default class PluginGleam extends Plugin {
@@ -28,6 +30,7 @@ export default class PluginGleam extends Plugin {
 
     onload() {
         Logger.init(this);
+        console.log(`[Gleam] 插件加载成功 - 编译时间: ${__BUILD_TIME__}`);
         Logger.log("onload");
         console.log(this);
         this.storage = new DataStorage(this);
