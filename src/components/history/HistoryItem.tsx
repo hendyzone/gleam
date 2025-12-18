@@ -6,9 +6,10 @@ interface HistoryItemProps {
   index: number;
   onSelect: (id: string) => void;
   onToggleFavorite: (id: string) => void;
+  onDelete: (id: string) => void;
 }
 
-const HistoryItem: React.FC<HistoryItemProps> = ({ item, index, onSelect, onToggleFavorite }) => {
+const HistoryItem: React.FC<HistoryItemProps> = ({ item, index, onSelect, onToggleFavorite, onDelete }) => {
   const handleClick = () => {
     onSelect(item.id);
   };
@@ -16,6 +17,13 @@ const HistoryItem: React.FC<HistoryItemProps> = ({ item, index, onSelect, onTogg
   const handleFavoriteClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     onToggleFavorite(item.id);
+  };
+
+  const handleDeleteClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (confirm(`确定要删除这条历史记录吗？\n\n${item.title}`)) {
+      onDelete(item.id);
+    }
   };
 
   return (
@@ -33,6 +41,13 @@ const HistoryItem: React.FC<HistoryItemProps> = ({ item, index, onSelect, onTogg
         title={item.isFavorite ? "取消收藏" : "收藏"}
       >
         {item.isFavorite ? "⭐" : "☆"}
+      </button>
+      <button
+        className="gleam-history-delete"
+        onClick={handleDeleteClick}
+        title="删除"
+      >
+        ✕
       </button>
     </div>
   );

@@ -8,7 +8,7 @@ import "./HistoryPanel.scss";
 const HistoryPanel: React.FC = () => {
   const { i18n } = useAppContext();
   const { state: uiState, dispatch: uiDispatch } = useUIContext();
-  const { history, isLoadingHistory, loadHistory, loadChatFromHistory, toggleFavorite } = useHistory();
+  const { history, isLoadingHistory, loadHistory, loadChatFromHistory, toggleFavorite, deleteHistoryItem } = useHistory();
 
   // 加载历史记录（当面板打开时）
   useEffect(() => {
@@ -34,6 +34,10 @@ const HistoryPanel: React.FC = () => {
   const handleToggleFavorite = useCallback(async (id: string) => {
     await toggleFavorite(id);
   }, [toggleFavorite]);
+
+  const handleDelete = useCallback(async (id: string) => {
+    await deleteHistoryItem(id);
+  }, [deleteHistoryItem]);
 
   if (!uiState.showHistoryPanel) {
     return null;
@@ -87,6 +91,7 @@ const HistoryPanel: React.FC = () => {
                   index={index}
                   onSelect={handleSelect}
                   onToggleFavorite={handleToggleFavorite}
+                  onDelete={handleDelete}
                 />
               ))}
             </div>

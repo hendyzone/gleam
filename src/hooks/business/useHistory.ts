@@ -109,6 +109,37 @@ export const useHistory = () => {
   };
 
   /**
+   * 删除历史记录项
+   */
+  const deleteHistoryItem = async (id: string): Promise<void> => {
+    try {
+      await storage.deleteHistoryItem(id);
+
+      // 重新加载历史列表以更新UI
+      await loadHistory();
+
+      uiDispatch({
+        type: "ADD_NOTIFICATION",
+        payload: {
+          type: "success",
+          message: "History item deleted"
+        }
+      });
+
+      Logger.log(`Deleted history item: ${id}`);
+    } catch (error: any) {
+      Logger.error("Failed to delete history item:", error);
+      uiDispatch({
+        type: "ADD_NOTIFICATION",
+        payload: {
+          type: "error",
+          message: "Failed to delete history item"
+        }
+      });
+    }
+  };
+
+  /**
    * 保存当前对话
    */
   const saveCurrentChat = async (messages: ChatMessage[]): Promise<void> => {
@@ -146,6 +177,7 @@ export const useHistory = () => {
     loadHistory,
     loadChatFromHistory,
     toggleFavorite,
+    deleteHistoryItem,
     saveCurrentChat,
     hasHistory
   };

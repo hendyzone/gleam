@@ -9,6 +9,7 @@ export interface HistoryState {
 export type HistoryAction =
   | { type: "SET_HISTORY"; payload: ChatHistory[] }
   | { type: "ADD_HISTORY_ITEM"; payload: ChatHistory }
+  | { type: "DELETE_HISTORY_ITEM"; payload: string }
   | { type: "TOGGLE_FAVORITE"; payload: string }
   | { type: "SET_CURRENT_HISTORY"; payload: string | null }
   | { type: "SET_LOADING_HISTORY"; payload: boolean };
@@ -31,6 +32,12 @@ export function historyReducer(state: HistoryState, action: HistoryAction): Hist
       return {
         ...state,
         history: [action.payload, ...state.history],
+      };
+
+    case "DELETE_HISTORY_ITEM":
+      return {
+        ...state,
+        history: state.history.filter((item) => item.id !== action.payload),
       };
 
     case "TOGGLE_FAVORITE": {
