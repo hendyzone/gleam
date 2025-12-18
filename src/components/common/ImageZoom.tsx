@@ -43,6 +43,10 @@ const ImageZoom: React.FC = () => {
     };
   }, [handleKeyDown]);
 
+  if (!uiState.showImageZoom || !uiState.imageZoomUrl) {
+    return null;
+  }
+
   return createPortal(
     <div className="gleam-image-zoom" onClick={handleOverlayClick}>
       <div className="gleam-image-zoom-content">
