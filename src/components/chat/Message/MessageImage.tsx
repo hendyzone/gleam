@@ -40,41 +40,24 @@ const MessageImage: React.FC<MessageImageProps> = ({ imageUrl }) => {
   };
 
   return (
-    <div className="gleam-message-image" style={{ marginTop: "8px", position: "relative" }}>
+    <div className="gleam-message-image">
       <img
         src={imageUrl}
         alt="Message attachment"
-        style={{
-          maxWidth: "100%",
-          maxHeight: "300px",
-          borderRadius: "4px",
-          cursor: "pointer",
-        }}
         onClick={handleZoom}
       />
-      <div
-        className="gleam-image-actions"
-        style={{
-          position: "absolute",
-          top: "8px",
-          right: "8px",
-          display: "flex",
-          gap: "4px",
-        }}
-      >
+      <div className="gleam-image-actions">
         <button
-          className="b3-button b3-button--small"
+          className="gleam-image-action-btn"
           onClick={handleZoom}
           title={i18n?.zoomImage || "Zoom"}
-          style={{ padding: "4px 8px" }}
         >
           🔍
         </button>
         <button
-          className="b3-button b3-button--small"
+          className="gleam-image-action-btn"
           onClick={handleCopy}
           title={i18n?.copyImage || "Copy"}
-          style={{ padding: "4px 8px" }}
         >
           📋
         </button>

@@ -47,31 +47,21 @@ const MessageActions: React.FC<MessageActionsProps> = ({
   };
 
   return (
-    <div
-      className="gleam-message-actions"
-      style={{
-        display: "flex",
-        gap: "4px",
-        marginTop: "8px",
-        opacity: 0.7,
-      }}
-    >
+    <div className="gleam-message-actions">
       <button
-        className="b3-button b3-button--small"
+        className="gleam-copy-button"
         onClick={handleCopy}
         title={i18n?.copy || "Copy"}
-        style={{ padding: "2px 8px", fontSize: "12px" }}
       >
-        📋 {i18n?.copy || "Copy"}
+        📋
       </button>
       {role === "assistant" && onRegenerate && (
         <button
-          className="b3-button b3-button--small"
+          className="gleam-regenerate-button"
           onClick={handleRegenerate}
           title={i18n?.regenerate || "Regenerate"}
-          style={{ padding: "2px 8px", fontSize: "12px" }}
         >
-          🔄 {i18n?.regenerate || "Regenerate"}
+          🔄
         </button>
       )}
     </div>
