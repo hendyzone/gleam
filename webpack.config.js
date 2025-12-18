@@ -8,20 +8,8 @@ const ZipPlugin = require("zip-webpack-plugin");
 
 module.exports = (env, argv) => {
     const isPro = argv.mode === "production";
-    const buildTime = new Date().toLocaleString('zh-CN', {
-        timeZone: 'Asia/Shanghai',
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit'
-    });
 
     const plugins = [
-        new webpack.DefinePlugin({
-            '__BUILD_TIME__': JSON.stringify(buildTime)
-        }),
         new MiniCssExtractPlugin({
             filename: isPro ? "dist/index.css" : "index.css",
         })

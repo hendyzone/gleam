@@ -12,10 +12,6 @@ import { ContextInjector } from "./features/context-injection";
 import { mountReactApp, unmountReactApp } from "./app/mount";
 import { Root } from "react-dom/client";
 
-// 声明编译时注入的全局变量
-declare const __BUILD_TIME__: string;
-
-
 export default class PluginGleam extends Plugin {
     // private chatPanel: ChatPanel | null = null; // Phase 1: Commented out
     private reactRoot: Root | null = null; // Phase 1: Added
@@ -30,7 +26,7 @@ export default class PluginGleam extends Plugin {
 
     onload() {
         Logger.init(this);
-        console.log(`[Gleam] 插件加载成功 - 编译时间: ${__BUILD_TIME__}`);
+        console.log("[Gleam] 插件加载成功");
         Logger.log("onload");
         console.log(this);
         this.storage = new DataStorage(this);
